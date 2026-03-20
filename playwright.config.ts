@@ -32,16 +32,9 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     // Maximizing settings
-    viewport: (process.env.CI || !process.env.HEADED) 
-      ? { width: 1280, height: 720 } 
-      : null,
+    viewport: { width: 1280, height: 720 },
     
-    launchOptions: {
-      // This only works locally in headed mode anyway!
-      args: ["--start-maximized"]
-    },
-  
-  },
+   },
 
   /* Configure projects for major browsers */
  projects: [
