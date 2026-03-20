@@ -8,6 +8,18 @@ export class BasePage {
         this.page = page;
     }
 
+    async maximizeWindow() {
+   
+    const screenSize = await this.page.evaluate(() => {
+        return {
+            width: window.screen.availWidth,
+            height: window.screen.availHeight,
+        };
+    });
+
+     await this.page.setViewportSize(screenSize);
+}
+
     //method to navigate to the base URL
     async navigate() {
         await this.page.goto(this.baseUrl);
