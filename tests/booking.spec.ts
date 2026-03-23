@@ -5,15 +5,18 @@ test('Positive: Room booking flow', async ({ pom }) => {
     // 1. Select the room from the home page
     await pom.homePage.clickRandomRoom();
     await pom.bookingPage.verifyBookingSectionIsVisible();
-    await pom.bookingPage.selectCheckInCheckOutDates();
+    const bookedDates = await pom.bookingPage.selectCheckInCheckOutDates();
     await pom.bookingPage.clickReserve();
-});
+    await pom.bookingPage.fillCustomerDetails()
+    await pom.bookingPage.clickReserve();
+    await pom.bookingPage.verifyBookingSuccess(bookedDates);
+ });
 
 test('Negative: Verify validation alerts when fields are empty', async ({ pom }) => {
         await pom.homePage.clickRandomRoom();
         await pom.bookingPage.verifyBookingSectionIsVisible();
         await pom.bookingPage.selectCheckInCheckOutDates();
         await pom.bookingPage.clickReserve();
-        await pom.bookingPage.clickReserve(); // Click reserve again without filling details to trigger validation
+        await pom.bookingPage.clickReserve(); 
         await pom.bookingPage.verifyAllErrorsAreVisible();
  });
