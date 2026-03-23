@@ -9,7 +9,7 @@ test('Positive: Room booking flow', async ({ pom }) => {
     await pom.bookingPage.clickReserve();
     await pom.bookingPage.fillCustomerDetails()
     await pom.bookingPage.clickReserve();
-    await pom.bookingPage.verifyBookingSuccess(bookedDates);
+    await pom.bookingPage.verifyBookingSuccess();
  });
 
 test('Negative: Verify validation alerts when fields are empty', async ({ pom }) => {

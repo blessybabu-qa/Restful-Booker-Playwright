@@ -111,7 +111,7 @@ export class BookingPage extends BasePage {
         await this.phone.fill(randomPhone);
 }
 
-async verifyBookingSuccess(bookedDates: string) {
+async verifyBookingSuccess() {
    const isAppError = await this.page.getByText('Application error').isVisible();
    if (isAppError) {
         console.warn("⚠️ Website crashed. Skipping this test to avoid a false failure.");
