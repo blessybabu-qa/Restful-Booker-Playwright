@@ -1,13 +1,15 @@
 // Import 'test' from your fixtures file
 import { test } from '../pages/fixtures';
+import { TestData } from '../pages/TestData';
 
 test('Positive: Room booking flow', async ({ pom }) => {
     // 1. Select the room from the home page
     await pom.homePage.clickRandomRoom();
     await pom.bookingPage.verifyBookingSectionIsVisible();
-    const bookedDates = await pom.bookingPage.selectCheckInCheckOutDates();
+    await pom.bookingPage.selectCheckInCheckOutDates();
     await pom.bookingPage.clickReserve();
-    await pom.bookingPage.fillCustomerDetails()
+    const userData = TestData.getBookingDetails();
+    await pom.bookingPage.fillCustomerDetails(userData);
     await pom.bookingPage.clickReserve();
     await pom.bookingPage.verifyBookingSuccess();
  });

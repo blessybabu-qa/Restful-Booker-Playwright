@@ -1,6 +1,5 @@
 import { Locator, Page, expect,test } from '@playwright/test';
 import { BasePage } from "./BasePage";
-import { faker } from '@faker-js/faker';
 
 export class BookingPage extends BasePage {
     readonly bookThisRoom: Locator;
@@ -96,19 +95,13 @@ export class BookingPage extends BasePage {
         }
     }
 
-    async fillCustomerDetails() {
-        const randomFirstName = faker.person.firstName();
-        const randomLastName = faker.person.lastName();
-        const randomEmail = faker.internet.email();
-        const randomPhone = faker.string.numeric(11); 
-        console.log(`First Name: ${randomFirstName}`);
-        console.log(`Last Name:  ${randomLastName}`);
-        console.log(`Email:      ${randomEmail}`);
-        console.log(`Phone:      ${randomPhone}`);
-        await this.firstName.fill(randomFirstName);
-        await this.lastName.fill(randomLastName);
-        await this.email.fill(randomEmail);
-        await this.phone.fill(randomPhone);
+    async fillCustomerDetails(details: { firstName: string, lastName: string, email: string, phone: string }) {
+    console.log(`Using Data: ${details.firstName} ${details.lastName}`);
+    
+    await this.firstName.fill(details.firstName);
+    await this.lastName.fill(details.lastName);
+    await this.email.fill(details.email);
+    await this.phone.fill(details.phone);
 }
 
 async verifyBookingSuccess() {
@@ -121,14 +114,13 @@ async verifyBookingSuccess() {
 
     try {
         await expect(this.bookingConfirmation).toBeVisible({ timeout: 10000 });
+        await this.returnHomeButton.click();
+        await expect(this.bookingConfirmation).toBeHidden();
     } catch (e) {
         if (await this.page.getByText('Application error').isVisible()) {
             test.skip(true, 'Server crashed late in the process.');
         }
         throw e; 
-
-    await this.returnHomeButton.click();
-    await expect(this.bookingConfirmation).toBeHidden();
 }
 }
 }
