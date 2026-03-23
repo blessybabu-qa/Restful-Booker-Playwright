@@ -31,10 +31,16 @@ export class HomePage extends BasePage {
         }
 
         async clickRandomRoom() {
+        await this.roomCards.first().waitFor({ state: 'visible', timeout: 10000 });
         const count = await this.roomCards.count();
+        if (count === 0) throw new Error("No room cards found on the home page.");
         const randomIndex = Math.floor(Math.random() * count);
-        await this.roomCards.nth(randomIndex).locator(this.bookNowLink).click();
-        console.log(`Clicked room card #${randomIndex + 1}`);
+        const targetCard = this.roomCards.nth(randomIndex);
+        const roomName = (await targetCard.locator('h5.card-title').innerText()).trim();
+        await targetCard.locator(this.bookNowLink).click();
+        console.log(`Selected Room: ${roomName}`);
+        return roomName;
+        
     }
 }
 
