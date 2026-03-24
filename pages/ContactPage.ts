@@ -15,7 +15,7 @@ export class ContactPage extends BasePage {
     readonly alert: Locator
 
 
-    constructor(page: any) {
+    constructor(page: Page) {
         super(page); 
         this.contactForm = page.getByText('Send Us a MessageNameEmailPhoneSubjectMessageSubmit');
         this.name = page.getByTestId('ContactName');

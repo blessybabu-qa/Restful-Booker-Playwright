@@ -10,7 +10,7 @@ export class RoomPage extends BasePage {
     readonly roomPolicies: Locator;
     readonly checkInCheckOutTime: Locator;
 
-    constructor(page: any) {
+    constructor(page: Page) {
         super(page); 
         this.roomTitle = page.locator('h1.fw-bold');
         this .roomImage = page.locator('img.hero-image');

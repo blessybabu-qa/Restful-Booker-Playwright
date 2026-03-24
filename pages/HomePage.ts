@@ -11,7 +11,7 @@ export class HomePage extends BasePage {
     readonly bookNowLink: Locator;
     readonly contactLink: Locator;
     
-    constructor(page: any) {
+    constructor(page: Page) {
         super(page); 
         this.heading = page.getByRole('link', { name: 'Shady Meadows B&B' });
         this.checkAvailabilityButton = page.getByRole('button', { name: 'Check Availability' });

@@ -15,7 +15,7 @@ export class BookingPage extends BasePage {
     readonly selectedDatesDisplay: Locator;
     readonly returnHomeButton: Locator
 
-     constructor(page: any) {
+     constructor(page: Page) {
         super(page); 
         this.bookThisRoom = page.getByRole('heading', { name: 'Book This Room' });
         this.dateCells = page.locator('.rbc-date-cell');
