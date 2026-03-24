@@ -55,13 +55,11 @@ export class BookingPage extends BasePage {
                 const boxB = await dayB.boundingBox();
 
                 if (boxA && boxB) {
-                    console.log(`>>> STARTING DRAG: Day ${j} to ${j+1}`);
                     await this.page.mouse.move(boxA.x + (boxA.width / 2), boxA.y + (boxA.height / 2));
                     await this.page.mouse.down();
                     await this.page.mouse.move(boxB.x + (boxB.width / 2), boxB.y + (boxB.height / 2), { steps: 60 });
                     await this.page.waitForTimeout(500); 
                     await this.page.mouse.up();
-                    console.log(">>> DRAG FINISHED. EXITING METHOD NOW.");
                     return; 
                 }
             }
