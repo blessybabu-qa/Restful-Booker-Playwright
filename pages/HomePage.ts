@@ -39,7 +39,6 @@ export class HomePage extends BasePage {
         const targetCard = this.roomCards.nth(randomIndex);
         const roomName = (await targetCard.locator('h5.card-title').innerText()).trim();
         await targetCard.locator(this.bookNowLink).click();
-        console.log(`Selected Room: ${roomName}`);
         return roomName;
 
         }

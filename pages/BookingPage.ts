@@ -103,7 +103,6 @@ export class BookingPage extends BasePage {
 async verifyBookingSuccess() {
    const isAppError = await this.page.getByText('Application error').isVisible();
    if (isAppError) {
-        console.warn("⚠️ Website crashed. Skipping this test to avoid a false failure.");
         test.skip(true, 'The Shady Meadows server returned an Application Error during confirmation.');
         return; 
     }
