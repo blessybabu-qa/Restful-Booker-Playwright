@@ -1,9 +1,7 @@
-// Import 'test' from your fixtures file
 import { test } from '../pages/fixtures';
 import { TestData } from '../pages/TestData';
 
 test('Positive: Room booking flow', async ({ pom }) => {
-    // 1. Select the room from the home page
     await pom.homePage.clickRandomRoom();
     await pom.bookingPage.verifyBookingSectionIsVisible();
     await pom.bookingPage.selectCheckInCheckOutDates();
