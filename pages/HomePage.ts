@@ -9,6 +9,7 @@ export class HomePage extends BasePage {
     readonly locationLink: Locator;
     readonly roomCards: Locator;
     readonly bookNowLink: Locator;
+    readonly contactLink: Locator;
     
     constructor(page: any) {
         super(page); 
@@ -18,11 +19,11 @@ export class HomePage extends BasePage {
         this.locationLink = page.getByRole('link', { name: 'Location' });
         this.roomCards = page.locator('.col-md-6').filter({ hasText: 'Book now' });
         this.bookNowLink = page.getByRole('link', { name: 'Book now' });
+        this.contactLink = page.locator('#navbarNav').getByRole('link', { name: 'Contact' });
         
     }
 
     async verifyHomePageIsLoaded() {
-        // We use 'expect' to verify visibility
         await expect(this.heading).toBeVisible();
         await expect(this.checkAvailabilityButton).toBeVisible();
         await expect(this.hotelImage).toBeVisible();
@@ -40,7 +41,11 @@ export class HomePage extends BasePage {
         await targetCard.locator(this.bookNowLink).click();
         console.log(`Selected Room: ${roomName}`);
         return roomName;
-        
-    }
+
+        }
+
+        async clickContactLink() {
+        await this.contactLink.click();
+        }
 }
 

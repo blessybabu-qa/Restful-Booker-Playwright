@@ -96,8 +96,6 @@ export class BookingPage extends BasePage {
     }
 
     async fillCustomerDetails(details: { firstName: string, lastName: string, email: string, phone: string }) {
-    console.log(`Using Data: ${details.firstName} ${details.lastName}`);
-    
     await this.firstName.fill(details.firstName);
     await this.lastName.fill(details.lastName);
     await this.email.fill(details.email);
