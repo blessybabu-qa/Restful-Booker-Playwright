@@ -10,6 +10,7 @@ export class HomePage extends BasePage {
     readonly roomCards: Locator;
     readonly bookNowLink: Locator;
     readonly contactLink: Locator;
+    readonly adminLink: Locator;
     
     constructor(page: Page) {
         super(page); 
@@ -20,6 +21,7 @@ export class HomePage extends BasePage {
         this.roomCards = page.locator('.col-md-6').filter({ hasText: 'Book now' });
         this.bookNowLink = page.getByRole('link', { name: 'Book now' });
         this.contactLink = page.locator('#navbarNav').getByRole('link', { name: 'Contact' });
+        this.adminLink = page.getByRole('link', { name: 'Admin', exact: true });
         
     }
 
@@ -45,6 +47,10 @@ export class HomePage extends BasePage {
 
         async clickContactLink() {
         await this.contactLink.click();
+        }
+
+        async clickAdminLink() {
+        await this.adminLink.click();
         }
 }
 
