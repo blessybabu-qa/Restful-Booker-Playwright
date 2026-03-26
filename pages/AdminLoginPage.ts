@@ -1,6 +1,6 @@
 import { Locator, Page, expect } from '@playwright/test';
 import { BasePage } from "./BasePage";
-import { th } from '@faker-js/faker';
+
 
 export class AdminLoginPage extends BasePage {
     readonly loginHeading: Locator;

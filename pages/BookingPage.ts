@@ -100,22 +100,13 @@ export class BookingPage extends BasePage {
     await this.phone.fill(details.phone);
 }
 
-async verifyBookingSuccess() {
+async verifyBookingSuccess(): Promise<boolean> {
    const isAppError = await this.page.getByText('Application error').isVisible();
-   if (isAppError) {
-        test.skip(true, 'The Shady Meadows server returned an Application Error during confirmation.');
-        return; 
-    }
-
-    try {
-        await expect(this.bookingConfirmation).toBeVisible({ timeout: 10000 });
-        await this.returnHomeButton.click();
-        await expect(this.bookingConfirmation).toBeHidden();
-    } catch (e) {
-        if (await this.page.getByText('Application error').isVisible()) {
-            test.skip(true, 'Server crashed late in the process.');
-        }
-        throw e; 
-}
+   if (isAppError) return false; 
+   await expect(this.bookingConfirmation)
+        .toBeVisible({ timeout: 10000 });
+    await this.returnHomeButton.click();
+    await expect(this.bookingConfirmation).toBeHidden();
+    return true;
 }
 }
