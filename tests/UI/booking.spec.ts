@@ -1,5 +1,5 @@
-import { test } from '../pages/fixtures';
-import { TestData } from '../pages/TestData';
+import { test } from '../../pages/fixtures';
+import { TestData } from '../../pages/TestData';
 
 test('Positive: Room booking flow', async ({ pom }) => {
     await pom.homePage.clickRandomRoom();

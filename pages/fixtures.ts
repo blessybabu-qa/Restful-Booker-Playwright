@@ -1,8 +1,14 @@
-import { test as base } from '@playwright/test';
+import { test as base, APIRequestContext } from '@playwright/test';
 import { POManager } from './POManager';
+import { BookingService } from '../api-clients/BookingService';
+import { TestData } from '../pages/TestData';
+
 
 type MyFixtures = {
     pom: POManager;
+    bookingService: BookingService;
+    preCreatedBookingId: number;
+    authToken: string;
 };
 
 export const test = base.extend<MyFixtures>({
@@ -18,6 +24,28 @@ export const test = base.extend<MyFixtures>({
         await use(pom);
         await page.close();
     },
-});
+
+    bookingService: async ({ request }: { request: APIRequestContext }, use: (r: BookingService) => Promise<void>) => {
+        const bookingService = new BookingService(request);
+        await use(bookingService);
+    },
+
+    preCreatedBookingId: async ({ bookingService }, use) => {
+        const payload = TestData.getApiBookingPayload();
+        const response = await bookingService.createBooking(payload);
+        if (!response.ok()) {
+            throw new Error(`Failed to pre-create booking: ${response.statusText()}`);
+        }
+       const body = await response.json();
+        const id = body.bookingid;
+        await use(id);
+
+    },
+
+    authToken: async ({ bookingService }, use) => {
+        const token = await bookingService.createToken();
+        await use(token);
+    },
+  });      
 
 export { expect } from '@playwright/test';

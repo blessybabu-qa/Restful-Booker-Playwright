@@ -4,9 +4,12 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+
 jobs:
-  test:
-    timeout-minutes: 60
+  
+  api-tests:
+    name: "Backend: API Suite"
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -17,8 +20,34 @@ jobs:
       run: npm ci
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
-    - name: Run Playwright tests
-      run: npx playwright test
+    - name: Run API & Setup Projects
+      run: npx playwright test --project=setup --project=api-tests
+      env:
+        API_URL: ${{ vars.API_URL }}
+        API_ADMIN_TOKEN: ${{ secrets.API_ADMIN_TOKEN }}
+    - uses: actions/upload-artifact@v4
+      if: ${{ !cancelled() }}
+      with:
+        name: playwright-report-api
+        path: playwright-report/
+        retention-days: 30
+
+  
+  ui-tests:
+    name: "Frontend: UI Suite"
+    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
+    - name: Install dependencies
+      run: npm ci
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps
+    - name: Run UI Projects
+      run: npx playwright test --project=ui-chromium --project=ui-firefox --project=ui-webkit
       env:
         BASE_URL: ${{ vars.BASE_URL }}
         ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
@@ -26,6 +55,6 @@ jobs:
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
-        name: playwright-report
+        name: playwright-report-ui
         path: playwright-report/
         retention-days: 30
