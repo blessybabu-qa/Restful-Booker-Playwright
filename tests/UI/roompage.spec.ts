@@ -1,4 +1,4 @@
-import { test } from '../pages/fixtures'; 
+import { test } from '../../pages/fixtures'; 
 
 test('should verify details of a randomly selected room', async ({ pom }) => {
         

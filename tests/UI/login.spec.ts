@@ -1,4 +1,4 @@
-import { test } from '../pages/fixtures';
+import { test } from '../../pages/fixtures';
 
 test('Positive: Admin login flow', async ({ pom }) => {
     await pom.homePage.clickAdminLink();

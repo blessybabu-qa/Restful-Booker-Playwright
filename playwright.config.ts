@@ -24,21 +24,40 @@ export default defineConfig({
 
   projects: [
     {
-      name: 'chromium',
-      use: {
-        browserName: 'chromium',
-        launchOptions: {
-          args: ['--start-maximized'],
-        },
+      name: 'setup',
+      testMatch: /api-ping\.spec\.ts/,
+      use: { baseURL: process.env.API_URL },
+    },
+    {
+      name: 'api-tests',
+      testMatch: /tests\/api\/.*\.spec\.ts/,
+      dependencies: ['setup'],
+      use: { baseURL: process.env.API_URL },
+    },
+    {
+      name: 'ui-chromium',
+      testMatch: /tests\/UI\/.*\.spec\.ts/,
+      use: { 
+        ...devices['Desktop Chrome'],
+        baseURL: process.env.BASE_URL,
+        launchOptions: { args: ['--start-maximized'] 
+          },
       },
     },
     {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
+      name: 'ui-firefox',
+      testMatch: /tests\/UI\/.*\.spec\.ts/,
+      use: { 
+        ...devices['Desktop Firefox'],
+        baseURL: process.env.BASE_URL,
+  },
+},
     {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
+      name: 'ui-webkit',
+      testMatch: /tests\/UI\/.*\.spec\.ts/,
+      use: { ...devices['Desktop Safari'],
+         baseURL: process.env.BASE_URL
+       },
     },
   ],
 });

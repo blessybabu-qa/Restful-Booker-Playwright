@@ -1,5 +1,5 @@
-import { test } from '../pages/fixtures';
-import { TestData } from '../pages/TestData';
+import { test } from '../../pages/fixtures';
+import { TestData } from '../../pages/TestData';
 
 test('Successful contact submission', async ({pom}) => {
     await pom.homePage.clickContactLink();
