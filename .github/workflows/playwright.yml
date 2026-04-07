@@ -4,10 +4,9 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
-    workflow_dispatch: #
+  workflow_dispatch: # 
 
 jobs:
-  
   api-tests:
     name: "Backend: API Suite"
     timeout-minutes: 15
@@ -32,8 +31,15 @@ jobs:
         name: playwright-report-api
         path: playwright-report/
         retention-days: 30
+    
+    - name: Archive Allure Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: allure-results-api
+        path: allure-results/
+        retention-days: 1
 
-  
   ui-tests:
     name: "Frontend: UI Suite"
     timeout-minutes: 45
@@ -59,3 +65,41 @@ jobs:
         name: playwright-report-ui
         path: playwright-report/
         retention-days: 30
+    
+    - name: Archive Allure Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: allure-results-ui
+        path: allure-results/
+        retention-days: 1
+
+  deploy-to-firebase:
+    name: "Deploy Allure to Firebase"
+    needs: [api-tests, ui-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Download API Results
+      uses: actions/download-artifact@v4
+      with:
+        name: allure-results-api
+        path: allure-results-combined
+    - name: Download UI Results
+      uses: actions/download-artifact@v4
+      with:
+        name: allure-results-ui
+        path: allure-results-combined
+    - name: Generate Allure Report
+      run: |
+        npm install -g allure-commandline
+        allure generate allure-results-combined --clean -o allure-report
+    - name: Deploy to Firebase
+      uses: FirebaseExtended/action-hosting-deploy@v0
+      with:
+        repoToken: ${{ secrets.GITHUB_TOKEN }}
+        firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RESTFUL_BOOKER }}
+        projectId: playwright-reports-blessybabu
+        siteId: restful-booker-qa
+        channelId: live

@@ -13,7 +13,10 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 1,
   workers: process.env.CI ? 1 : 2,
-  reporter: 'html',
+  reporter: [
+    ['html'], 
+    ['allure-playwright']
+    ],             
 
   use: {
     baseURL: process.env.BASE_URL ,
