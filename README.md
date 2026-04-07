@@ -1,25 +1,22 @@
 # Restful Booker — Playwright E2E Automation Framework
 
-A personal automation project built to demonstrate end-to-end test framework design using **Playwright** and **TypeScript**. The project targets [automationintesting.online](https://automationintesting.online/) and covers core user journeys across the booking, room, contact, and admin features.
+A personal automation project built to demonstrate end-to-end test framework design using **Playwright** and **TypeScript**. The project targets [automationintesting.online](https://automationintesting.online) and covers core user journeys across the booking, room, contact, and admin features.
 
 > ⚠️ Work in progress — actively being extended with new test scenarios.
 
----
-
 ## 🛠️ Tech Stack
 
-| Tool                               | Purpose                          |
-| ---------------------------------- | -------------------------------- |
-| [Playwright](https://playwright.dev/) | Browser automation & test runner |
-| TypeScript                         | Strongly-typed test code         |
-| Faker.js                           | Dynamic randomised test data     |
-| dotenv                             | Environment variable management  |
-| GitHub Actions                     | CI/CD pipeline                   |
-
----
+| Tool             | Purpose                           |
+|------------------|-----------------------------------|
+| Playwright       | Browser automation & test runner  |
+| TypeScript       | Strongly-typed test code          |
+| Faker.js         | Dynamic randomised test data      |
+| dotenv           | Environment variable management   |
+| Allure Report    | Test reporting & history tracking |
+| Firebase Hosting | Live report deployment            |
+| GitHub Actions   | CI/CD pipeline                    |
 
 ## 📁 Project Structure
-
 ```
 └── blessybabu-qa-restful-booker-playwright/
     ├── README.md
@@ -57,39 +54,31 @@ A personal automation project built to demonstrate end-to-end test framework des
             └── playwright.yml
 ```
 
----
-
 ## 🏗️ Framework Design
 
 ### BasePage — Shared Base Class
-
-All page objects extend `BasePage`, which provides shared `navigate()`, `waitForPageLoad()`, `waitAndFill()`, and `waitAndClick()` utilities. This avoids duplication and ensures consistent behaviour across all pages.
+All page objects extend BasePage, which provides shared `navigate()`, `waitForPageLoad()`, `waitAndFill()`, and `waitAndClick()` utilities. This avoids duplication and ensures consistent behaviour across all pages.
 
 ### POManager — Page Object Manager
-
-A central `POManager` class instantiates all page objects in one place and is injected into every test via a custom fixture. Tests access all pages through a single `pom` object — keeping test files clean and free of setup logic.
+A central POManager class instantiates all page objects in one place and is injected into every test via a custom fixture. Tests access all pages through a single `pom` object — keeping test files clean and free of setup logic.
 
 ### Custom Fixtures — Test Isolation
-
-`fixtures.ts` extends Playwright's base `test` object with a `pom` fixture that handles full setup before each test:
+`fixtures.ts` extends Playwright's base test object with a `pom` fixture that handles full setup before each test:
 
 - Sets viewport to 1920×1080
 - Navigates to the base URL
-- Clears `localStorage` and `sessionStorage` to prevent state leaking between tests
+- Clears localStorage and sessionStorage to prevent state leaking between tests
 - Reloads the page to a guaranteed clean state
 - Closes the page after each test
 
 API fixtures provide a `bookingService`, a `preCreatedBookingId` (booking created before the test runs), and an `authToken` — keeping test logic clean and setup out of spec files.
 
 ### Dynamic Test Data
-
 `TestData.ts` uses Faker.js to generate randomised booking, contact, and API payload data on every test run. No hardcoded values anywhere in the test layer — each run is independent and produces unique data.
 
 ### Environment-Based Configuration
-
 Sensitive credentials and environment-specific URLs are managed via a `.env` file (locally) and GitHub Actions secrets/variables (in CI). This keeps credentials out of source code and allows tests to run against different environments without touching code.
-
-```
+```env
 # .env (local — do not commit)
 BASE_URL=<site URL>
 ADMIN_EMAIL=<your-admin-email>
@@ -98,14 +87,12 @@ API_URL=<api base URL>
 API_ADMIN_TOKEN=<bearer token for protected endpoints>
 ```
 
----
-
 ## ✅ Test Coverage
 
 ### UI Tests
 
 | Area         | Scenario                                                                      | Type     |
-| ------------ | ----------------------------------------------------------------------------- | -------- |
+|--------------|-------------------------------------------------------------------------------|----------|
 | Homepage     | All main UI elements visible                                                  | Positive |
 | Room Page    | Room title matches selection, image visible, description and policies present | Positive |
 | Booking      | Successful end-to-end room booking flow                                       | Positive |
@@ -117,7 +104,7 @@ API_ADMIN_TOKEN=<bearer token for protected endpoints>
 ### API Tests
 
 | Endpoint            | Scenario                                          | Type     |
-| ------------------- | ------------------------------------------------- | -------- |
+|---------------------|---------------------------------------------------|----------|
 | GET /ping           | Service health check returns 201                  | Positive |
 | POST /booking       | Create booking, verify ID returned                | Positive |
 | GET /booking/:id    | Retrieve booking by fixture-generated ID          | Positive |
@@ -125,17 +112,13 @@ API_ADMIN_TOKEN=<bearer token for protected endpoints>
 | PUT /booking/:id    | Full update with dynamic token and payload        | Positive |
 | DELETE /booking/:id | Delete booking, verify 404 on subsequent GET      | Positive |
 
----
-
 ## 🚀 Getting Started
 
 ### Prerequisites
-
 - Node.js (LTS)
 - npm
 
 ### Installation
-
 ```bash
 # Clone the repository
 git clone https://github.com/blessybabu-qa/Restful-Booker-Playwright.git
@@ -151,8 +134,7 @@ npx playwright install
 ### Environment Setup
 
 Create a `.env` file in the project root:
-
-```
+```env
 BASE_URL=<site URL>
 ADMIN_EMAIL=<your-admin-email>
 ADMIN_PASSWORD=<your-admin-password>
@@ -161,7 +143,6 @@ API_ADMIN_TOKEN=<bearer token>
 ```
 
 ### Running Tests
-
 ```bash
 # Run all tests
 npx playwright test
@@ -183,12 +164,35 @@ BASE_URL=https://staging.example.com npx playwright test
 ```
 
 ### View the HTML Report
-
 ```bash
 npx playwright show-report
 ```
 
----
+## 📊 Test Reports
+
+### Allure Report — Live on Firebase
+
+An Allure report is automatically generated on every CI run and deployed to Firebase Hosting.
+
+🔗 **[View Latest Allure Report](https://restful-booker-qa.web.app)**
+
+![Allure Report](allure-report-image/allure-report.png)
+
+The report provides:
+- Full test suite breakdown by feature and spec file
+- Pass/fail status per test with step-level detail
+- Timeline view across parallel browser runs
+- History and trend tracking across builds
+
+### Generating Allure Report Locally
+```bash
+# Run tests and generate Allure results
+npx playwright test
+
+# Generate and open the Allure report
+allure generate allure-results --clean -o allure-report
+allure open allure-report
+```
 
 ## ⚙️ CI/CD
 
@@ -197,29 +201,26 @@ Tests run automatically on every push and pull request to `main` via GitHub Acti
 - **Backend: API Suite** — runs the `setup` (ping) and `api-tests` projects
 - **Frontend: UI Suite** — runs `ui-chromium`, `ui-firefox`, and `ui-webkit`
 
-The full HTML report is uploaded as a build artifact and retained for 30 days.
+After each run, the Allure report is generated from the results and deployed to Firebase Hosting at [restful-booker-qa.web.app](https://restful-booker-qa.web.app), replacing the previous report with the latest build.
+
+The full HTML report is also uploaded as a build artifact and retained for 30 days.
 
 The following repository secrets and variables must be configured in GitHub:
 
-| Name                | Type     | Description                              |
-| ------------------- | -------- | ---------------------------------------- |
-| `ADMIN_EMAIL`     | Secret   | Admin login email                        |
-| `ADMIN_PASSWORD`  | Secret   | Admin login password                     |
-| `API_ADMIN_TOKEN` | Secret   | Bearer token for protected API endpoints |
-| `BASE_URL`        | Variable | UI target environment URL                |
-| `API_URL`         | Variable | API target environment URL               |
-
----
+| Name            | Type     | Description                              |
+|-----------------|----------|------------------------------------------|
+| ADMIN_EMAIL     | Secret   | Admin login email                        |
+| ADMIN_PASSWORD  | Secret   | Admin login password                     |
+| API_ADMIN_TOKEN | Secret   | Bearer token for protected API endpoints |
+| BASE_URL        | Variable | UI target environment URL                |
+| API_URL         | Variable | API target environment URL               |
 
 ## 📌 Notes
 
-- This project targets [automationintesting.online](https://automationintesting.online/), a public shared demo environment that occasionally returns server errors. Booking tests handle this gracefully using `test.skip()` to avoid false failures caused by third-party instability.
+- This project targets automationintesting.online, a public shared demo environment that occasionally returns server errors. Booking tests handle this gracefully using `test.skip()` to avoid false failures caused by third-party instability.
 - Test coverage is intentionally scoped to selected user journeys. The framework is designed to be extended incrementally.
-
----
 
 ## 🔭 Planned Improvements
 
 - [ ] Add negative UI test cases with invalid data variants (invalid email format, phone too short, special characters in name fields)
 - [ ] Add negative admin login test (invalid credentials, empty fields)
-
