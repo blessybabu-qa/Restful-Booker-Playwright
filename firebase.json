@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "restful-booker-qa",
+    "target": "restful-booker-qa",
     "public": "allure-report",
     "ignore": [
       "firebase.json",
