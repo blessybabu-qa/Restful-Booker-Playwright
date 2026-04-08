@@ -11,6 +11,7 @@ export class AdminLoginPage extends BasePage {
     readonly report: Locator;
     readonly branding: Locator;
     readonly messages: Locator;
+    readonly errorMessage: Locator;
 
     constructor(page: Page) {
         super(page);
@@ -22,6 +23,7 @@ export class AdminLoginPage extends BasePage {
         this.report = page.getByRole('link', { name: 'Report' });
         this.branding = page.getByRole('link', { name: 'Branding' });
         this.messages = page.getByRole('link', { name: 'Messages' });
+        this.errorMessage = page.getByText('Invalid credentials');
 
     }
 
@@ -32,23 +34,27 @@ export class AdminLoginPage extends BasePage {
         await expect(this.loginButton).toBeVisible();
     }
 
-    async loginAsAdmin() {
-       
-        const username = process.env.ADMIN_EMAIL;
-        const password = process.env.ADMIN_PASSWORD;
-        if (!username || !password) {
-    throw new Error("Missing credentials..."); 
-}
-        await this.waitAndFill(this.userName, username);
-        await this.waitAndFill(this.password, password);
-        await this.waitAndClick(this.loginButton);
+   async loginAsAdmin(user?: string, pass?: string) {
+    const finalUser = user ?? process.env.ADMIN_EMAIL;
+    const finalPass = pass ?? process.env.ADMIN_PASSWORD;
+    if (finalUser === undefined || finalPass === undefined) {
+        throw new Error(`Login Failed: Username or Password not found. 
+            Check your .env file or the data being passed.`);
     }
+    await this.userName.fill(finalUser!);
+    await this.password.fill(finalPass!);
+    await this.loginButton.click();
+}
 
     async loginSuccessValidation() {
        await expect(this.rooms).toBeVisible();
        await expect(this.report).toBeVisible();
        await expect(this.branding).toBeVisible();
        await expect(this.messages).toBeVisible();
+    }
+
+    async verifyErrorMessage() {
+        await expect(this.errorMessage).toBeVisible();
     }
 
 }

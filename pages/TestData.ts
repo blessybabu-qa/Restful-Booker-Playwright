@@ -42,4 +42,35 @@ export class TestData {
         };
     }
 
+    static getAdminLoginScenarios() {
+        return [
+            {
+                scenario: "Positive: Valid Admin Login",
+                username: process.env.ADMIN_EMAIL!, 
+                password: process.env.ADMIN_PASSWORD!,
+                isValid: true
+            },
+            {
+                scenario: "Negative: Invalid Random Credentials",
+                username: faker.internet.email(),
+                password: faker.internet.password(),
+                isValid: false,
+            },  
+                
+            {
+                scenario: "Negative: SQL Injection Attempt",
+                username: "' OR 1=1 --", 
+                password: "any_password",
+                isValid: false,
+               },
+
+            {
+                scenario: "Negative: Empty Username",
+                username: "",
+                password: process.env.ADMIN_PASSWORD!,
+                isValid: false,
+            }
+        ];
+    }
+
 }
