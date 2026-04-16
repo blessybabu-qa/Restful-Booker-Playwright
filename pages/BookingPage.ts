@@ -101,12 +101,22 @@ export class BookingPage extends BasePage {
 }
 
 async verifyBookingSuccess(): Promise<boolean> {
-   const isAppError = await this.page.getByText('Application error').isVisible();
-   if (isAppError) return false; 
-   await expect(this.bookingConfirmation)
-        .toBeVisible({ timeout: 10000 });
-    await this.returnHomeButton.click();
-    await expect(this.bookingConfirmation).toBeHidden();
-    return true;
+    await Promise.race([
+        this.bookingConfirmation.waitFor({ state: 'visible', timeout: 15000 }).catch(() => {}),
+        this.page.getByText('Application error').waitFor({ state: 'visible', timeout: 15000 }).catch(() => {})
+    ]);
+    const isAppError = await this.page.getByText('Application error').isVisible();
+    if (isAppError) {
+       
+        return false; 
+    }
+    try {
+        await expect(this.bookingConfirmation).toBeVisible({ timeout: 5000 });
+        await this.returnHomeButton.click();
+        await expect(this.bookingConfirmation).toBeHidden();
+        return true;
+    } catch (e) {
+        return false;
+    }
 }
 }
