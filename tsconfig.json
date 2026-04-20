@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext", 
+    "module": "ESNext",
+    "moduleResolution": "Bundler", 
     "types": ["node", "@playwright/test"],
     "esModuleInterop": true,
     "skipLibCheck": true,
