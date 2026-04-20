@@ -13,15 +13,15 @@ jobs:
       run: docker build -t playwright-tests .
 
     - name: Run Tests in Docker
-      run: |
+      run: >
         docker run --rm \
         --shm-size=2gb \
-        -v ${{ github.workspace }}/allure-results:/app/allure-results \
-        -e API_URL=${{ vars.API_URL }} \
-        -e API_ADMIN_TOKEN=${{ secrets.API_ADMIN_TOKEN }} \
-        -e BASE_URL=${{ vars.BASE_URL }} \
-        -e ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }} \
-        -e ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }} \
+        -v ${{ github.workspace }}/allure-results:/app/allure-results
+        -e API_URL=${{ vars.API_URL }}
+        -e API_ADMIN_TOKEN=${{ secrets.API_ADMIN_TOKEN }}
+        -e BASE_URL=${{ vars.BASE_URL }}
+        -e ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}
+        -e ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
         playwright-tests npx playwright test
 
     - name: Archive Allure Results
