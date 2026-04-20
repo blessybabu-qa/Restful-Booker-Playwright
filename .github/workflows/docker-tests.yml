@@ -22,8 +22,7 @@ jobs:
         -e BASE_URL=${{ vars.BASE_URL }} \
         -e ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }} \
         -e ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }} \
-        playwright-tests \
-        npx playwright test
+        playwright-tests npx playwright test
 
     - name: Archive Allure Results
       if: always()
