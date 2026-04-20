@@ -1,0 +1,28 @@
+# Dependencies (Crucial to ignore so Docker can install its own)
+node_modules/
+npm-debug.log
+
+# Playwright Outputs
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+playwright/.auth/
+
+# Reports
+allure-results/
+allure-report/
+
+# Environment & Secrets
+.env
+.env.*
+
+# Git and IDE (Docker doesn't need your history or editor settings)
+.git
+.gitignore
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
