@@ -27,6 +27,7 @@ A personal automation project built to demonstrate end-to-end test framework des
 └── blessybabu-qa-restful-booker-playwright/
     ├── README.md
     ├── Dockerfile
+    ├── .env.example
     ├── package.json
     ├── playwright.config.ts
     ├── api-clients/
@@ -64,95 +65,182 @@ A personal automation project built to demonstrate end-to-end test framework des
 
 ---
 
-## 🐳 Running with Docker (Recommended — No setup required)
+## 🐳 Running with Docker (Recommended — No credentials needed from me)
 
-> **For anyone reviewing this project:** You do not need any credentials from me.
-> All values used below are the publicly documented default credentials for
-> [automationintesting.online](https://automationintesting.online) — a shared demo
-> environment built specifically for QA practice. Just copy and paste the commands
-> below and the suite will run immediately.
+> **For anyone reviewing this project:** All values below are the publicly documented
+> default credentials for [automationintesting.online](https://automationintesting.online)
+> — a shared demo environment built specifically for QA practice.
+> You do not need anything from me to run this project.
 
 ### Prerequisites
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
+- No local Node.js or Playwright installation required
 
 ---
 
-### Step 1 — Clone and build
+### Step 1 — Clone the repository
 
 ```bash
 git clone https://github.com/your-username/blessybabu-qa-restful-booker-playwright.git
 cd blessybabu-qa-restful-booker-playwright
+```
 
+---
+
+### Step 2 — Create the `.env` file
+
+The project reads credentials from a `.env` file at runtime. Create it in the project root with the values below — these are the public defaults for the demo site, not private secrets.
+
+**macOS / Linux (Terminal)**
+```bash
+cat > .env << 'EOF'
+BASE_URL=https://automationintesting.online
+API_URL=https://restful-booker.herokuapp.com
+ADMIN_EMAIL=admin
+ADMIN_PASSWORD=password
+API_ADMIN_TOKEN=Basic YWRtaW46cGFzc3dvcmQ=
+EOF
+```
+
+**Windows (PowerShell)**
+```powershell
+@"
+BASE_URL=https://automationintesting.online
+API_URL=https://restful-booker.herokuapp.com
+ADMIN_EMAIL=admin
+ADMIN_PASSWORD=password
+API_ADMIN_TOKEN=Basic YWRtaW46cGFzc3dvcmQ=
+"@ | Set-Content .env
+```
+
+**Windows (Command Prompt)**
+```cmd
+(
+echo BASE_URL=https://automationintesting.online
+echo API_URL=https://restful-booker.herokuapp.com
+echo ADMIN_EMAIL=admin
+echo ADMIN_PASSWORD=password
+echo API_ADMIN_TOKEN=Basic YWRtaW46cGFzc3dvcmQ=
+) > .env
+```
+
+Alternatively, just create a plain text file named `.env` in the project root and paste in:
+
+```
+BASE_URL=https://automationintesting.online
+API_URL=https://restful-booker.herokuapp.com
+ADMIN_EMAIL=admin
+ADMIN_PASSWORD=password
+API_ADMIN_TOKEN=Basic YWRtaW46cGFzc3dvcmQ=
+```
+
+---
+
+### Step 3 — Build the Docker image
+
+```bash
 docker build -t playwright-tests .
 ```
 
-This installs all dependencies and Playwright browsers inside the image. It only needs to run once.
+This installs all dependencies and Playwright browsers inside the image. Only needs to run once — or after any dependency changes.
 
 ---
 
-### Step 2 — Run the full test suite
+### Step 4 — Run the full test suite
 
+**macOS / Linux (Terminal)**
 ```bash
 docker run --rm \
   --shm-size=2gb \
-  -e BASE_URL="https://automationintesting.online" \
-  -e API_URL="https://restful-booker.herokuapp.com" \
-  -e ADMIN_EMAIL="admin" \
-  -e ADMIN_PASSWORD="password" \
-  -e API_ADMIN_TOKEN="Basic YWRtaW46cGFzc3dvcmQ=" \
+  --env-file .env \
+  -v "$(pwd)/allure-results:/app/allure-results" \
   playwright-tests
+```
+
+**Windows (PowerShell)**
+```powershell
+docker run --rm `
+  --shm-size=2gb `
+  --env-file .env `
+  -v "${PWD}/allure-results:/app/allure-results" `
+  playwright-tests
+```
+
+**Windows (Command Prompt)**
+```cmd
+docker run --rm --shm-size=2gb --env-file .env -v "%cd%/allure-results:/app/allure-results" playwright-tests
 ```
 
 > **Why `--shm-size=2gb`?** Playwright browsers use shared memory. Without this flag they can crash inside Docker due to the default 64MB `/dev/shm` limit.
+>
+> **Why the volume mount?** The `-v` flag maps the `allure-results` folder inside the container back to your local machine so the test results are available after the container exits.
 
 ---
 
-### Step 3 — Save the Allure results (optional)
+### Step 5 — View the Allure Report
 
-To generate a local Allure report after the run, mount a volume:
+Once tests complete, launch the Allure report in your browser using a Dockerised Allure service — no local Allure installation needed.
 
+**macOS / Linux (Terminal)**
 ```bash
 docker run --rm \
-  --shm-size=2gb \
+  -p 8080:8080 \
   -v "$(pwd)/allure-results:/app/allure-results" \
-  -e BASE_URL="https://automationintesting.online" \
-  -e API_URL="https://restful-booker.herokuapp.com" \
-  -e ADMIN_EMAIL="admin" \
-  -e ADMIN_PASSWORD="password" \
-  -e API_ADMIN_TOKEN="Basic YWRtaW46cGFzc3dvcmQ=" \
-  playwright-tests
+  frankescobar/allure-docker-service \
+  allure serve allure-results --port 8080 --host 0.0.0.0
 ```
 
-Then generate and open the report:
-
-```bash
-allure generate allure-results --clean -o allure-report
-allure open allure-report
+**Windows (PowerShell)**
+```powershell
+docker run --rm `
+  -p 8080:8080 `
+  -v "${PWD}/allure-results:/app/allure-results" `
+  frankescobar/allure-docker-service `
+  allure serve allure-results --port 8080 --host 0.0.0.0
 ```
+
+**Windows (Command Prompt)**
+```cmd
+docker run --rm -p 8080:8080 -v "%cd%/allure-results:/app/allure-results" frankescobar/allure-docker-service allure serve allure-results --port 8080 --host 0.0.0.0
+```
+
+Once the terminal shows `Server started`, open your browser and go to:
+
+👉 **http://127.0.0.1:8080**
 
 ---
 
 ### Run a specific project or test file
 
-Override the default command by appending Playwright arguments after the image name:
+Append Playwright arguments after the image name to override the default command.
 
+**macOS / Linux**
 ```bash
 # API tests only
-docker run --rm --shm-size=2gb \
-  -e API_URL="https://restful-booker.herokuapp.com" \
-  -e API_ADMIN_TOKEN="Basic YWRtaW46cGFzc3dvcmQ=" \
+docker run --rm --shm-size=2gb --env-file .env \
   playwright-tests npx playwright test --project=setup --project=api-tests
 
 # UI tests — Chromium only
-docker run --rm --shm-size=2gb \
-  -e BASE_URL="https://automationintesting.online" \
-  -e ADMIN_EMAIL="admin" \
-  -e ADMIN_PASSWORD="password" \
+docker run --rm --shm-size=2gb --env-file .env \
   playwright-tests npx playwright test --project=ui-chromium
 
 # Single spec file
-docker run --rm --shm-size=2gb \
-  -e BASE_URL="https://automationintesting.online" \
+docker run --rm --shm-size=2gb --env-file .env \
+  playwright-tests npx playwright test tests/UI/homepage.spec.ts --project=ui-chromium
+```
+
+**Windows (PowerShell)**
+```powershell
+# API tests only
+docker run --rm --shm-size=2gb --env-file .env `
+  playwright-tests npx playwright test --project=setup --project=api-tests
+
+# UI tests — Chromium only
+docker run --rm --shm-size=2gb --env-file .env `
+  playwright-tests npx playwright test --project=ui-chromium
+
+# Single spec file
+docker run --rm --shm-size=2gb --env-file .env `
   playwright-tests npx playwright test tests/UI/homepage.spec.ts --project=ui-chromium
 ```
 
@@ -170,7 +258,7 @@ COPY . .                                           # Copy source last (layer cac
 CMD ["npx", "playwright", "test"]                 # Default: run the full suite
 ```
 
-The `.dockerignore` file excludes `node_modules`, test results, reports, and `.env` files to keep the image lean and prevent local credentials from being copied in.
+The `.dockerignore` file excludes `node_modules`, test results, reports, and `.env` files to keep the image lean and to ensure local credentials are never baked into the image.
 
 ---
 
@@ -192,7 +280,7 @@ npx playwright install
 
 ### Environment Setup
 
-Create a `.env` file in the project root:
+Create a `.env` file in the project root (same values as the Docker setup above):
 
 ```env
 BASE_URL=https://automationintesting.online
@@ -201,8 +289,6 @@ ADMIN_PASSWORD=password
 API_URL=https://restful-booker.herokuapp.com
 API_ADMIN_TOKEN=Basic YWRtaW46cGFzc3dvcmQ=
 ```
-
-> These are the public default credentials for the demo environment — not private values.
 
 ### Running Tests
 
@@ -304,14 +390,6 @@ The report provides:
 - Pass/fail status per test with step-level detail
 - Timeline view across parallel browser runs
 - History and trend tracking across builds
-
-### Generating Allure Report Locally
-
-```bash
-npx playwright test
-allure generate allure-results --clean -o allure-report
-allure open allure-report
-```
 
 ---
 
