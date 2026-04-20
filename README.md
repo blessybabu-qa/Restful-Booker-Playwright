@@ -4,6 +4,8 @@ A personal automation project built to demonstrate end-to-end test framework des
 
 > ⚠️ Work in progress — actively being extended with new test scenarios.
 
+---
+
 ## 🛠️ Tech Stack
 
 | Tool             | Purpose                           |
@@ -15,12 +17,16 @@ A personal automation project built to demonstrate end-to-end test framework des
 | Allure Report    | Test reporting & history tracking |
 | Firebase Hosting | Live report deployment            |
 | GitHub Actions   | CI/CD pipeline                    |
+| Docker           | Containerised, reproducible runs  |
+
+---
 
 ## 📁 Project Structure
 
 ```
 └── blessybabu-qa-restful-booker-playwright/
     ├── README.md
+    ├── Dockerfile
     ├── package.json
     ├── playwright.config.ts
     ├── api-clients/
@@ -52,19 +58,189 @@ A personal automation project built to demonstrate end-to-end test framework des
     │       └── roompage.spec.ts
     └── .github/
         └── workflows/
-            └── playwright.yml
+            ├── playwright.yml
+            └── docker-tests.yml
 ```
+
+---
+
+## 🐳 Running with Docker (Recommended — No setup required)
+
+> **For anyone reviewing this project:** You do not need any credentials from me.
+> All values used below are the publicly documented default credentials for
+> [automationintesting.online](https://automationintesting.online) — a shared demo
+> environment built specifically for QA practice. Just copy and paste the commands
+> below and the suite will run immediately.
+
+### Prerequisites
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
+
+---
+
+### Step 1 — Clone and build
+
+```bash
+git clone https://github.com/your-username/blessybabu-qa-restful-booker-playwright.git
+cd blessybabu-qa-restful-booker-playwright
+
+docker build -t playwright-tests .
+```
+
+This installs all dependencies and Playwright browsers inside the image. It only needs to run once.
+
+---
+
+### Step 2 — Run the full test suite
+
+```bash
+docker run --rm \
+  --shm-size=2gb \
+  -e BASE_URL="https://automationintesting.online" \
+  -e API_URL="https://restful-booker.herokuapp.com" \
+  -e ADMIN_EMAIL="admin" \
+  -e ADMIN_PASSWORD="password" \
+  -e API_ADMIN_TOKEN="Basic YWRtaW46cGFzc3dvcmQ=" \
+  playwright-tests
+```
+
+> **Why `--shm-size=2gb`?** Playwright browsers use shared memory. Without this flag they can crash inside Docker due to the default 64MB `/dev/shm` limit.
+
+---
+
+### Step 3 — Save the Allure results (optional)
+
+To generate a local Allure report after the run, mount a volume:
+
+```bash
+docker run --rm \
+  --shm-size=2gb \
+  -v "$(pwd)/allure-results:/app/allure-results" \
+  -e BASE_URL="https://automationintesting.online" \
+  -e API_URL="https://restful-booker.herokuapp.com" \
+  -e ADMIN_EMAIL="admin" \
+  -e ADMIN_PASSWORD="password" \
+  -e API_ADMIN_TOKEN="Basic YWRtaW46cGFzc3dvcmQ=" \
+  playwright-tests
+```
+
+Then generate and open the report:
+
+```bash
+allure generate allure-results --clean -o allure-report
+allure open allure-report
+```
+
+---
+
+### Run a specific project or test file
+
+Override the default command by appending Playwright arguments after the image name:
+
+```bash
+# API tests only
+docker run --rm --shm-size=2gb \
+  -e API_URL="https://restful-booker.herokuapp.com" \
+  -e API_ADMIN_TOKEN="Basic YWRtaW46cGFzc3dvcmQ=" \
+  playwright-tests npx playwright test --project=setup --project=api-tests
+
+# UI tests — Chromium only
+docker run --rm --shm-size=2gb \
+  -e BASE_URL="https://automationintesting.online" \
+  -e ADMIN_EMAIL="admin" \
+  -e ADMIN_PASSWORD="password" \
+  playwright-tests npx playwright test --project=ui-chromium
+
+# Single spec file
+docker run --rm --shm-size=2gb \
+  -e BASE_URL="https://automationintesting.online" \
+  playwright-tests npx playwright test tests/UI/homepage.spec.ts --project=ui-chromium
+```
+
+---
+
+### What the Dockerfile does
+
+```dockerfile
+FROM mcr.microsoft.com/playwright:v1.58.2-jammy  # Official image with browsers pre-installed
+WORKDIR /app
+COPY package*.json ./
+RUN npm install                                    # Install project dependencies
+RUN npx playwright install --with-deps            # Install browsers + OS dependencies
+COPY . .                                           # Copy source last (layer cache friendly)
+CMD ["npx", "playwright", "test"]                 # Default: run the full suite
+```
+
+The `.dockerignore` file excludes `node_modules`, test results, reports, and `.env` files to keep the image lean and prevent local credentials from being copied in.
+
+---
+
+## 🚀 Running Locally (Without Docker)
+
+### Prerequisites
+- Node.js (LTS)
+- npm
+
+### Installation
+
+```bash
+git clone https://github.com/your-username/blessybabu-qa-restful-booker-playwright.git
+cd blessybabu-qa-restful-booker-playwright
+
+npm install
+npx playwright install
+```
+
+### Environment Setup
+
+Create a `.env` file in the project root:
+
+```env
+BASE_URL=https://automationintesting.online
+ADMIN_EMAIL=admin
+ADMIN_PASSWORD=password
+API_URL=https://restful-booker.herokuapp.com
+API_ADMIN_TOKEN=Basic YWRtaW46cGFzc3dvcmQ=
+```
+
+> These are the public default credentials for the demo environment — not private values.
+
+### Running Tests
+
+```bash
+# Run all tests
+npx playwright test
+
+# Run in headed mode (watch the browser)
+npx playwright test --headed
+
+# API tests only
+npx playwright test --project=setup --project=api-tests
+
+# UI tests only
+npx playwright test --project=ui-chromium --project=ui-firefox --project=ui-webkit
+
+# Single spec file
+npx playwright test tests/UI/booking.spec.ts
+```
+
+### View the HTML Report
+
+```bash
+npx playwright show-report
+```
+
+---
 
 ## 🏗️ Framework Design
 
 ### BasePage — Shared Base Class
-All page objects extend BasePage, which provides shared navigate, waitForPageLoad, waitAndFill, and waitAndClick utilities. This avoids duplication and ensures consistent behaviour across all pages.
+All page objects extend `BasePage`, which provides shared `navigate`, `waitForPageLoad`, `waitAndFill`, and `waitAndClick` utilities. This avoids duplication and ensures consistent behaviour across all pages.
 
 ### POManager — Page Object Manager
-A central POManager class instantiates all page objects in one place and is injected into every test via a custom fixture. Tests access all pages through a single pom object — keeping test files clean and free of setup logic.
+A central `POManager` class instantiates all page objects in one place and is injected into every test via a custom fixture. Tests access all pages through a single `pom` object — keeping test files clean and free of setup logic.
 
 ### Custom Fixtures — Test Isolation
-fixtures.ts extends Playwright's base test object with a pom fixture that handles full setup before each test:
+`fixtures.ts` extends Playwright's base test object with a `pom` fixture that handles full setup before each test:
 
 - Sets viewport to 1920×1080
 - Navigates to the base URL
@@ -72,16 +248,18 @@ fixtures.ts extends Playwright's base test object with a pom fixture that handle
 - Reloads the page to a guaranteed clean state
 - Closes the page after each test
 
-API fixtures provide a bookingService, a preCreatedBookingId (booking created before the test runs), and an authToken — keeping test logic clean and setup out of spec files.
+API fixtures provide a `bookingService`, a `preCreatedBookingId` (booking created before the test runs), and an `authToken` — keeping test logic clean and setup out of spec files.
 
 ### Dynamic Test Data
-TestData.ts uses Faker.js to generate randomised booking, contact, and API payload data on every test run. No hardcoded values anywhere in the test layer — each run is independent and produces unique data.
+`TestData.ts` uses Faker.js to generate randomised booking, contact, and API payload data on every test run. No hardcoded values anywhere in the test layer — each run is independent and produces unique data.
 
 ### Data-Driven Testing
-The admin login suite uses a data-driven approach powered by TestData.getAdminLoginScenarios(). A single loop in login.spec.ts iterates over an array of scenarios — each with a username, password, and a valid/invalid flag — and dynamically generates a named test for each one. Adding a new login scenario requires only a new entry in TestData.ts with no changes to the spec file needed. This pattern currently covers a valid login, invalid random credentials, an SQL injection attempt, and an empty username submission.
+The admin login suite uses a data-driven approach powered by `TestData.getAdminLoginScenarios()`. A single loop in `login.spec.ts` iterates over an array of scenarios — each with a username, password, and a valid/invalid flag — and dynamically generates a named test for each one. Adding a new login scenario requires only a new entry in `TestData.ts` with no changes to the spec file needed.
 
 ### Environment-Based Configuration
-Sensitive credentials and environment-specific URLs are managed via a .env file locally and GitHub Actions secrets and variables in CI. This keeps credentials out of source code and allows tests to run against different environments without touching any code.
+Sensitive credentials and environment-specific URLs are managed via a `.env` file locally and GitHub Actions secrets and variables in CI. This keeps credentials out of source code and allows tests to run against different environments without touching any code.
+
+---
 
 ## ✅ Test Coverage
 
@@ -111,107 +289,7 @@ Sensitive credentials and environment-specific URLs are managed via a .env file 
 | PUT /booking/:id    | Full update with dynamic token and payload        | Positive |
 | DELETE /booking/:id | Delete booking, verify 404 on subsequent GET      | Positive |
 
-## 🧩 Technical Challenges & Solutions
-
-Building this framework against a live, shared demo environment exposed problems that a controlled test environment never would. Here is where things got genuinely hard and how I solved them.
-
 ---
-
-### Challenge 1: Booking a Room Without Knowing Which Dates Are Free
-
-The booking calendar renders a live React Big Calendar populated with real reservations from a shared demo site. There is no API to query availability, no data attribute on cells to indicate a blocked day, and no pattern to predict which dates would be free on any given run.
-
-Hardcoding a date range worked locally but failed in CI because another user had already booked those dates. The solution was to write a dynamic date-picker that scans the visible calendar grid at runtime, iterates over every visible day cell, checks each one for the presence of an existing booking marker, and finds the first consecutive free pair before performing the drag. If the entire current month is fully booked, the logic navigates forward to the next month and repeats — up to five months ahead. This makes the test resilient to any real-world booking state on the shared environment.
-
----
-
-### Challenge 2: Third-Party Server Instability
-
-The target site is a shared demo environment used by QA practitioners globally. Mid-test it occasionally throws an application error page — not a test failure, just server noise from the third party.
-
-Rather than letting the test fail with a misleading assertion error, the booking success check detects the error page first and returns early if found. The spec then marks the test as skipped with a clear explanation. This keeps the suite clean for genuine failures while making third-party instability visible in the report as intentional skips rather than false negatives.
-
----
-
-### Challenge 3: API Authentication — Two Methods, One Codebase
-
-The Restful Booker API supports two authentication approaches: a Bearer token in the Authorization header for PATCH requests, and a session cookie for PUT and DELETE. Getting these wrong produces a silent 403 with no useful error message.
-
-The solution was to split authentication strategy by HTTP method in BookingService.ts. The patch method reads the bearer token from the environment, stored as a CI secret, while the update and delete methods accept a dynamic token generated fresh per test via a dedicated fixture. Protected tests never share tokens and never depend on a static credential that could expire between runs.
-
----
-
-### Challenge 4: Preventing Silent Credential Failures in Data-Driven Tests
-
-The login scenarios array includes the live admin credentials read from environment variables. If the .env file is missing or a CI secret is not configured, the positive scenario silently receives undefined and attempts to log in with the literal string "undefined" — producing a confusing false negative with no obvious cause in the report.
-
-The solution was to add an explicit guard in loginAsAdmin() that throws a descriptive error immediately if either credential resolves to undefined. This surfaces misconfiguration at the point of failure rather than burying it inside an assertion mismatch several steps later.
-
----
-
-### Challenge 5: API Tests Depending on Pre-Existing Data
-
-Several API tests — GET by ID, PATCH, PUT, and DELETE — need a booking to exist before the test body runs. Creating it inside the test mixes setup with assertion logic and makes setup failures indistinguishable from test failures.
-
-The preCreatedBookingId fixture handles creation before the test runs and exposes only the resulting ID. The authToken fixture similarly generates a fresh token per test. Both are composed in fixtures.ts using Playwright's fixture dependency graph, so any test that needs pre-existing data simply declares it as a parameter and the framework handles everything else automatically.
-
----
-
-## 🤖 How I Used AI in This Project
-
-I used AI as a pairing tool at specific points where the problem was well-defined but the solution required specialist knowledge I did not have on hand.
-
-The calendar drag implementation was the most significant case. React Big Calendar uses synthetic drag events and a standard drag-and-drop sequence does not trigger date selection. I used AI to understand that the library responds to a mouse-down, mouse-move with enough incremental steps to register as a drag, followed by mouse-up — and to work out the correct coordinate maths for targeting cell centres using bounding box data. The dynamic availability-scanning logic that wraps the drag was written by me independently.
-
-The XPath traversal used to detect existing bookings on a day cell also involved AI guidance. The booking event element sits as a sibling in the DOM rather than a direct child of the day cell, meaning a straightforward descendant selector will not reach it. I used AI to identify the correct traversal path, then integrated it into the availability-checking loop myself.
-
-Everything else — fixture architecture, page object design, authentication strategy, CI pipeline, data-driven structure — I designed and built independently, using AI only to look things up the same way I would use documentation.
-
----
-
-## 📚 What I Learned
-
-**Framework design matters more than test count.** Early on I wrote tests directly in spec files. Refactoring everything into POManager and fixtures was time-consuming, but it made every test written after it faster to build and far easier to debug. The lesson is to invest in the framework before investing in coverage.
-
-**Fixtures are a first-class design tool.** Playwright's fixture system is more powerful than I initially appreciated. Treating pre-created booking IDs and auth tokens as fixtures rather than in-test setup changed how I think about test isolation — setup is not boilerplate, it is infrastructure that belongs in a composable, reusable layer.
-
-**Data-driven testing scales better than duplicated specs.** The login suite started as separate positive and negative test cases. Refactoring it into a data-driven loop made it trivial to add the SQL injection and empty-field scenarios without touching the spec file at all. The pattern will carry forward as the suite grows.
-
-**Shared environments will break your tests in creative ways.** Hardcoded dates, assumptions about server state, and fixed credentials all failed me here. Tests that discover their own preconditions at runtime are the only reliable solution when you do not control the environment.
-
-**CI is not optional.** Running tests locally on one browser hides enormous amounts of flakiness. Setting up GitHub Actions early surfaced cross-browser timing differences — especially in WebKit — before they could become ingrained habits.
-
-**TypeScript discipline pays off.** Strict typing caught several integration mistakes between BookingService and the fixture layer before they ever ran — failures that a dynamically typed approach would only have surfaced at runtime in the middle of a test run.
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js (LTS)
-- npm
-
-### Installation
-
-Clone the repository, install dependencies with npm install, then install Playwright browsers with npx playwright install.
-
-### Environment Setup
-
-Create a .env file in the project root with the following variables:
-
-- BASE_URL — the target site URL
-- ADMIN_EMAIL — admin login email
-- ADMIN_PASSWORD — admin login password
-- API_URL — the API base URL
-- API_ADMIN_TOKEN — bearer token for protected endpoints
-
-### Running Tests
-
-Run all tests with npx playwright test. You can target a specific file, run in headed mode with --headed, select a browser project with --project, or run only the API suite by specifying the setup and api-tests projects.
-
-### View the HTML Report
-
-Run npx playwright show-report after a test run to open the built-in Playwright HTML report in your browser.
 
 ## 📊 Test Reports
 
@@ -220,7 +298,6 @@ Run npx playwright show-report after a test run to open the built-in Playwright 
 An Allure report is automatically generated on every CI run and deployed to Firebase Hosting.
 
 🔗 **[View Latest Allure Report](https://restful-booker-qa.web.app)**
-<img width="2538" height="1296" alt="allure report" src="https://github.com/user-attachments/assets/6ec579cc-0668-49e5-bf2b-26db4dbbf7a4" />
 
 The report provides:
 - Full test suite breakdown by feature and spec file
@@ -230,32 +307,96 @@ The report provides:
 
 ### Generating Allure Report Locally
 
-Run the tests first to produce the allure-results directory, then use the allure generate and allure open commands to build and view the report locally.
+```bash
+npx playwright test
+allure generate allure-results --clean -o allure-report
+allure open allure-report
+```
+
+---
 
 ## ⚙️ CI/CD
 
-Tests run automatically on every push and pull request to main via GitHub Actions. The pipeline is split into two independent jobs:
+Tests run automatically on every push and pull request to `main` via GitHub Actions. The pipeline is split into three jobs:
 
-- **Backend: API Suite** — runs the setup (ping) and api-tests projects
-- **Frontend: UI Suite** — runs ui-chromium, ui-firefox, and ui-webkit
+- **Backend: API Suite** — runs the `setup` and `api-tests` projects
+- **Frontend: UI Suite** — runs `ui-chromium`, `ui-firefox`, and `ui-webkit` in parallel
+- **Deploy Allure to Firebase** — combines results from both jobs and publishes to Firebase Hosting
 
-After each run, the Allure report is generated from the combined results and deployed to Firebase Hosting, replacing the previous report with the latest build. The full HTML report is also uploaded as a build artifact and retained for 30 days.
+A separate `docker-tests.yml` workflow is available for manual dispatch. It builds the Docker image, runs the full suite inside the container, and uploads the Allure results as a build artifact.
 
-The following repository secrets and variables must be configured in GitHub:
+### Required GitHub Secrets & Variables
 
-| Name            | Type     | Description                              |
-|-----------------|----------|------------------------------------------|
-| ADMIN_EMAIL     | Secret   | Admin login email                        |
-| ADMIN_PASSWORD  | Secret   | Admin login password                     |
-| API_ADMIN_TOKEN | Secret   | Bearer token for protected API endpoints |
-| BASE_URL        | Variable | UI target environment URL                |
-| API_URL         | Variable | API target environment URL               |
+| Name                                      | Type     | Description                              |
+|-------------------------------------------|----------|------------------------------------------|
+| `ADMIN_EMAIL`                             | Secret   | Admin login email                        |
+| `ADMIN_PASSWORD`                          | Secret   | Admin login password                     |
+| `API_ADMIN_TOKEN`                         | Secret   | Bearer token for protected API endpoints |
+| `FIREBASE_SERVICE_ACCOUNT_RESTFUL_BOOKER` | Secret   | Firebase deployment credentials          |
+| `BASE_URL`                                | Variable | UI target environment URL                |
+| `API_URL`                                 | Variable | API target environment URL               |
+
+---
+
+## 🧩 Technical Challenges & Solutions
+
+### Challenge 1: Booking a Room Without Knowing Which Dates Are Free
+
+The booking calendar renders a live React Big Calendar populated with real reservations from a shared demo site. Hardcoding a date range worked locally but failed in CI because another user had already booked those dates. The solution was a dynamic date-picker that scans the visible calendar grid at runtime, checks each cell for an existing booking marker, and finds the first consecutive free pair. If the current month is fully booked, it navigates forward up to five months ahead.
+
+### Challenge 2: Third-Party Server Instability
+
+The target site occasionally throws an application error mid-test. Rather than letting the test fail with a misleading assertion error, the booking success check detects the error page first and returns early. The spec marks the test as skipped with a clear explanation, keeping the suite clean for genuine failures.
+
+### Challenge 3: API Authentication — Two Methods, One Codebase
+
+The API supports Bearer token authentication for PATCH and session cookie authentication for PUT and DELETE. Authentication strategy is split by HTTP method in `BookingService.ts` — the `patch` method reads the bearer token from the environment, while `update` and `delete` accept a dynamic token generated fresh per test via a dedicated fixture.
+
+### Challenge 4: Preventing Silent Credential Failures in Data-Driven Tests
+
+If a CI secret is not configured, the positive login scenario silently receives `undefined` and attempts to log in with the literal string `"undefined"`. An explicit guard in `loginAsAdmin()` throws a descriptive error immediately if either credential resolves to `undefined`, surfacing misconfiguration at the point of failure.
+
+### Challenge 5: API Tests Depending on Pre-Existing Data
+
+Several API tests need a booking to exist before the test body runs. The `preCreatedBookingId` fixture handles creation before the test runs and exposes only the resulting ID. The `authToken` fixture similarly generates a fresh token per test. Both are composed in `fixtures.ts` using Playwright's fixture dependency graph.
+
+---
+
+## 🤖 How I Used AI in This Project
+
+I used AI as a pairing tool at specific points where the problem was well-defined but the solution required specialist knowledge I did not have on hand.
+
+The calendar drag implementation was the most significant case. React Big Calendar uses synthetic drag events and a standard drag-and-drop sequence does not trigger date selection. I used AI to understand the correct mouse event sequence and coordinate maths for targeting cell centres using bounding box data. The dynamic availability-scanning logic that wraps the drag was written independently.
+
+The XPath traversal used to detect existing bookings on a day cell also involved AI guidance, as the booking event element sits as a sibling in the DOM rather than a direct child of the day cell.
+
+Everything else — fixture architecture, page object design, authentication strategy, CI pipeline, data-driven structure — was designed and built independently.
+
+---
+
+## 📚 What I Learned
+
+**Framework design matters more than test count.** Refactoring everything into POManager and fixtures was time-consuming but made every subsequent test faster to build and easier to debug.
+
+**Fixtures are a first-class design tool.** Treating pre-created booking IDs and auth tokens as fixtures rather than in-test setup changed how I think about test isolation.
+
+**Data-driven testing scales better than duplicated specs.** The login suite started as separate test cases. Refactoring it into a data-driven loop made adding new scenarios trivial without touching the spec file.
+
+**Shared environments will break your tests in creative ways.** Tests that discover their own preconditions at runtime are the only reliable solution when you do not control the environment.
+
+**CI is not optional.** Running tests locally on one browser hides enormous amounts of flakiness. Setting up GitHub Actions early surfaced cross-browser timing differences before they became ingrained habits.
+
+**TypeScript discipline pays off.** Strict typing caught several integration mistakes between `BookingService` and the fixture layer before they ever ran.
+
+---
 
 ## 📌 Notes
 
-- This project targets automationintesting.online, a public shared demo environment that occasionally returns server errors. Booking tests handle this gracefully by skipping rather than failing to avoid false results caused by third-party instability.
+- This project targets `automationintesting.online`, a public shared demo environment that occasionally returns server errors. Booking tests handle this gracefully by skipping rather than failing.
 - Test coverage is intentionally scoped to selected user journeys. The framework is designed to be extended incrementally.
+
+---
 
 ## 🔭 Planned Improvements
 
-- [ ] Add negative UI test cases with invalid data variants such as invalid email format, phone number too short, and special characters in name fields
+- [ ] Add negative UI test cases with invalid data variants (invalid email format, phone number too short, special characters in name fields)
