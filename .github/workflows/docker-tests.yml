@@ -14,8 +14,8 @@ jobs:
 
     - name: Run Tests in Docker
       run: >
-        docker run --rm \
-        --shm-size=2gb \
+        docker run --rm
+        --shm-size=2gb
         -v ${{ github.workspace }}/allure-results:/app/allure-results
         -e API_URL=${{ vars.API_URL }}
         -e API_ADMIN_TOKEN=${{ secrets.API_ADMIN_TOKEN }}
