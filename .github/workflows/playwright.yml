@@ -25,6 +25,8 @@ jobs:
       env:
         API_URL: ${{ vars.API_URL }}
         API_ADMIN_TOKEN: ${{ secrets.API_ADMIN_TOKEN }}
+        API_ADMIN_USER: ${{ secrets.API_ADMIN_USER }}
+        API_ADMIN_PASSWORD: ${{ secrets.API_ADMIN_PASSWORD }}
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
