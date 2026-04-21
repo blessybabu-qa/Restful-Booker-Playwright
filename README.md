@@ -1,8 +1,6 @@
 # Restful Booker — Playwright E2E Automation Framework
 
-A personal automation project built to demonstrate end-to-end test framework design using **Playwright** and **TypeScript**. The project targets [automationintesting.online](https://automationintesting.online) and covers core user journeys across the booking, room, contact, and admin features.
-
-> ⚠️ Work in progress — actively being extended with new test scenarios.
+A complete, production-ready E2E automation framework built with **Playwright** and **TypeScript** — covering UI testing, REST API automation (GET/POST/PUT/PATCH/DELETE), cross-browser CI/CD, Docker, and live Allure reporting across the booking, room, contact, and admin features of [automationintesting.online](https://automationintesting.online).
 
 ---
 
@@ -27,9 +25,13 @@ A personal automation project built to demonstrate end-to-end test framework des
 └── blessybabu-qa-restful-booker-playwright/
     ├── README.md
     ├── Dockerfile
+    ├── firebase.json
     ├── .env.example
     ├── package.json
     ├── playwright.config.ts
+    ├── tsconfig.json
+    ├── .dockerignore
+    ├── .firebaserc
     ├── api-clients/
     │   ├── BaseService.ts
     │   └── BookingService.ts
@@ -81,8 +83,8 @@ A personal automation project built to demonstrate end-to-end test framework des
 ### Step 1 — Clone the repository
 
 ```bash
-git clone https://github.com/your-username/blessybabu-qa-restful-booker-playwright.git
-cd blessybabu-qa-restful-booker-playwright
+git clone https://github.com/blessybabu-qa/Restful-Booker-Playwright.git
+cd Restful-Booker-Playwright
 ```
 
 ---
@@ -99,6 +101,8 @@ API_URL=https://restful-booker.herokuapp.com
 ADMIN_EMAIL=admin
 ADMIN_PASSWORD=password
 API_ADMIN_TOKEN=Basic YWRtaW46cGFzc3dvcmQ=
+API_ADMIN_USER=admin
+API_ADMIN_PASSWORD=password123
 EOF
 ```
 
@@ -110,6 +114,8 @@ API_URL=https://restful-booker.herokuapp.com
 ADMIN_EMAIL=admin
 ADMIN_PASSWORD=password
 API_ADMIN_TOKEN=Basic YWRtaW46cGFzc3dvcmQ=
+API_ADMIN_USER=admin
+API_ADMIN_PASSWORD=password123
 "@ | Set-Content .env
 ```
 
@@ -121,10 +127,12 @@ echo API_URL=https://restful-booker.herokuapp.com
 echo ADMIN_EMAIL=admin
 echo ADMIN_PASSWORD=password
 echo API_ADMIN_TOKEN=Basic YWRtaW46cGFzc3dvcmQ=
+echo API_ADMIN_USER=admin
+echo API_ADMIN_PASSWORD=password123
 ) > .env
 ```
 
-Alternatively, just create a plain text file named `.env` in the project root and paste in:
+Alternatively, create a plain text file named `.env` in the project root and paste in:
 
 ```
 BASE_URL=https://automationintesting.online
@@ -132,6 +140,8 @@ API_URL=https://restful-booker.herokuapp.com
 ADMIN_EMAIL=admin
 ADMIN_PASSWORD=password
 API_ADMIN_TOKEN=Basic YWRtaW46cGFzc3dvcmQ=
+API_ADMIN_USER=admin
+API_ADMIN_PASSWORD=password123
 ```
 
 ---
@@ -271,8 +281,8 @@ The `.dockerignore` file excludes `node_modules`, test results, reports, and `.e
 ### Installation
 
 ```bash
-git clone https://github.com/your-username/blessybabu-qa-restful-booker-playwright.git
-cd blessybabu-qa-restful-booker-playwright
+git clone https://github.com/blessybabu-qa/Restful-Booker-Playwright.git
+cd Restful-Booker-Playwright
 
 npm install
 npx playwright install
@@ -280,7 +290,7 @@ npx playwright install
 
 ### Environment Setup
 
-Create a `.env` file in the project root (same values as the Docker setup above):
+Create a `.env` file in the project root:
 
 ```env
 BASE_URL=https://automationintesting.online
@@ -288,6 +298,8 @@ ADMIN_EMAIL=admin
 ADMIN_PASSWORD=password
 API_URL=https://restful-booker.herokuapp.com
 API_ADMIN_TOKEN=Basic YWRtaW46cGFzc3dvcmQ=
+API_ADMIN_USER=admin
+API_ADMIN_PASSWORD=password123
 ```
 
 ### Running Tests
@@ -337,13 +349,22 @@ A central `POManager` class instantiates all page objects in one place and is in
 API fixtures provide a `bookingService`, a `preCreatedBookingId` (booking created before the test runs), and an `authToken` — keeping test logic clean and setup out of spec files.
 
 ### Dynamic Test Data
-`TestData.ts` uses Faker.js to generate randomised booking, contact, and API payload data on every test run. No hardcoded values anywhere in the test layer — each run is independent and produces unique data.
+`TestData.ts` uses Faker.js to generate randomised data on every test run — including dynamic future-dated check-in and check-out dates calculated at runtime using `faker.date.soon()`. No hardcoded values anywhere in the test or data layer.
 
 ### Data-Driven Testing
 The admin login suite uses a data-driven approach powered by `TestData.getAdminLoginScenarios()`. A single loop in `login.spec.ts` iterates over an array of scenarios — each with a username, password, and a valid/invalid flag — and dynamically generates a named test for each one. Adding a new login scenario requires only a new entry in `TestData.ts` with no changes to the spec file needed.
 
 ### Environment-Based Configuration
 Sensitive credentials and environment-specific URLs are managed via a `.env` file locally and GitHub Actions secrets and variables in CI. This keeps credentials out of source code and allows tests to run against different environments without touching any code.
+
+### Project Separation — API vs UI
+The Playwright config separates concerns cleanly across five independent projects:
+
+- `setup` — runs the API health check (`api-ping.spec.ts`) as a standalone gate
+- `api-tests` — depends on `setup`; runs all API specs excluding the ping via a negative lookahead regex (`(?!api-ping)`) to prevent the health check running twice
+- `ui-chromium`, `ui-firefox`, `ui-webkit` — run UI specs independently across all three browsers with no dependency on the API projects
+
+This ensures UI and API suites run in parallel in CI without any cross-dependency.
 
 ---
 
@@ -405,14 +426,16 @@ A separate `docker-tests.yml` workflow is available for manual dispatch. It buil
 
 ### Required GitHub Secrets & Variables
 
-| Name                                      | Type     | Description                              |
-|-------------------------------------------|----------|------------------------------------------|
-| `ADMIN_EMAIL`                             | Secret   | Admin login email                        |
-| `ADMIN_PASSWORD`                          | Secret   | Admin login password                     |
-| `API_ADMIN_TOKEN`                         | Secret   | Bearer token for protected API endpoints |
-| `FIREBASE_SERVICE_ACCOUNT_RESTFUL_BOOKER` | Secret   | Firebase deployment credentials          |
-| `BASE_URL`                                | Variable | UI target environment URL                |
-| `API_URL`                                 | Variable | API target environment URL               |
+| Name                                      | Type     | Description                                        |
+|-------------------------------------------|----------|----------------------------------------------------|
+| `ADMIN_EMAIL`                             | Secret   | Admin login email for UI tests                     |
+| `ADMIN_PASSWORD`                          | Secret   | Admin login password for UI tests                  |
+| `API_ADMIN_TOKEN`                         | Secret   | Bearer token for PATCH endpoint authentication     |
+| `API_ADMIN_USER`                          | Secret   | Username for API token generation (PUT/DELETE)     |
+| `API_ADMIN_PASSWORD`                      | Secret   | Password for API token generation (PUT/DELETE)     |
+| `FIREBASE_SERVICE_ACCOUNT_RESTFUL_BOOKER` | Secret   | Firebase deployment credentials                    |
+| `BASE_URL`                                | Variable | UI target environment URL                          |
+| `API_URL`                                 | Variable | API target environment URL                         |
 
 ---
 
@@ -420,7 +443,7 @@ A separate `docker-tests.yml` workflow is available for manual dispatch. It buil
 
 ### Challenge 1: Booking a Room Without Knowing Which Dates Are Free
 
-The booking calendar renders a live React Big Calendar populated with real reservations from a shared demo site. Hardcoding a date range worked locally but failed in CI because another user had already booked those dates. The solution was a dynamic date-picker that scans the visible calendar grid at runtime, checks each cell for an existing booking marker, and finds the first consecutive free pair. If the current month is fully booked, it navigates forward up to five months ahead.
+The booking calendar renders a live React Big Calendar populated with real reservations from a shared demo site. Hardcoding a date range worked locally but failed in CI because another user had already booked those dates. The solution was a dynamic date-picker that scans the visible calendar grid at runtime, checks each cell for an existing booking marker, and finds the first consecutive free pair. If the current month is fully booked, it navigates forward up to five months ahead. API booking dates are similarly generated dynamically at runtime using `faker.date.soon()` with a `refDate` to guarantee check-out always falls after check-in.
 
 ### Challenge 2: Third-Party Server Instability
 
@@ -428,15 +451,19 @@ The target site occasionally throws an application error mid-test. Rather than l
 
 ### Challenge 3: API Authentication — Two Methods, One Codebase
 
-The API supports Bearer token authentication for PATCH and session cookie authentication for PUT and DELETE. Authentication strategy is split by HTTP method in `BookingService.ts` — the `patch` method reads the bearer token from the environment, while `update` and `delete` accept a dynamic token generated fresh per test via a dedicated fixture.
+The API supports Bearer token authentication for PATCH and session cookie authentication for PUT and DELETE. Authentication strategy is split by HTTP method in `BookingService.ts` — the `patchBooking` method reads the bearer token from `API_ADMIN_TOKEN` in the environment, while `updateBooking` and `deleteBooking` accept a dynamic session token generated fresh per test via the `authToken` fixture. Token creation reads credentials from `API_ADMIN_USER` and `API_ADMIN_PASSWORD` environment variables and throws a descriptive error immediately if the auth endpoint returns a non-OK response.
 
 ### Challenge 4: Preventing Silent Credential Failures in Data-Driven Tests
 
-If a CI secret is not configured, the positive login scenario silently receives `undefined` and attempts to log in with the literal string `"undefined"`. An explicit guard in `loginAsAdmin()` throws a descriptive error immediately if either credential resolves to `undefined`, surfacing misconfiguration at the point of failure.
+If a CI secret is not configured, the positive login scenario silently receives `undefined` and attempts to log in with the literal string `"undefined"`. An explicit guard in `loginAsAdmin()` throws a descriptive error immediately if either credential resolves to `undefined`, surfacing misconfiguration at the point of failure rather than producing a misleading assertion error.
 
 ### Challenge 5: API Tests Depending on Pre-Existing Data
 
 Several API tests need a booking to exist before the test body runs. The `preCreatedBookingId` fixture handles creation before the test runs and exposes only the resulting ID. The `authToken` fixture similarly generates a fresh token per test. Both are composed in `fixtures.ts` using Playwright's fixture dependency graph.
+
+### Challenge 6: Preventing the Health Check Running Twice
+
+The `setup` project matches `api-ping.spec.ts` by exact filename. Without a guard, the `api-tests` project glob (`tests/api/*.spec.ts`) would also match and run it a second time. A negative lookahead regex (`(?!api-ping)`) in the `api-tests` `testMatch` pattern explicitly excludes the ping spec, ensuring it runs exactly once as a dependency gate and never again as part of the main API suite.
 
 ---
 
@@ -448,7 +475,7 @@ The calendar drag implementation was the most significant case. React Big Calend
 
 The XPath traversal used to detect existing bookings on a day cell also involved AI guidance, as the booking event element sits as a sibling in the DOM rather than a direct child of the day cell.
 
-Everything else — fixture architecture, page object design, authentication strategy, CI pipeline, data-driven structure — was designed and built independently.
+Everything else — fixture architecture, page object design, authentication strategy, CI pipeline, data-driven structure, config design — was designed and built independently.
 
 ---
 
@@ -466,6 +493,8 @@ Everything else — fixture architecture, page object design, authentication str
 
 **TypeScript discipline pays off.** Strict typing caught several integration mistakes between `BookingService` and the fixture layer before they ever ran.
 
+**Config bugs surface in unexpected ways.** An incorrect project dependency in `playwright.config.ts` caused `baseURL` to resolve as `undefined` at runtime, producing a `Cannot navigate to invalid URL` error in all UI tests. Careful separation of API and UI project dependencies prevents this class of failure entirely.
+
 ---
 
 ## 📌 Notes
@@ -478,3 +507,4 @@ Everything else — fixture architecture, page object design, authentication str
 ## 🔭 Planned Improvements
 
 - [ ] Add negative UI test cases with invalid data variants (invalid email format, phone number too short, special characters in name fields)
+- [ ] Add negative API test scenarios (401 unauthorised, 404 not found, 400 bad request)
