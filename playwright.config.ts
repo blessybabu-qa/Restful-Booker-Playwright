@@ -30,6 +30,18 @@ export default defineConfig({
   },
 
   projects: [
+
+    {
+      name: 'setup',
+      testMatch: /api-ping\.spec\.ts/,
+      use: { baseURL: process.env.API_URL },
+    },
+    {
+      name: 'api-tests',
+      testMatch: /tests\/api\/(?!api-ping).*\.spec\.ts/,
+      dependencies: ['setup'],
+      use: { baseURL: process.env.API_URL },
+    },
     
     {
       name: 'ui-chromium',
@@ -56,18 +68,5 @@ export default defineConfig({
          baseURL: process.env.BASE_URL
        },
     },
-
-    {
-      name: 'setup',
-      testMatch: /api-ping\.spec\.ts/,
-      dependencies: ['ui-chromium', 'ui-firefox', 'ui-webkit'],
-      use: { baseURL: process.env.API_URL },
-    },
-    {
-      name: 'api-tests',
-      testMatch: /tests\/api\/(?!api-ping).*\.spec\.ts/,
-      dependencies: ['setup'],
-      use: { baseURL: process.env.API_URL },
-    },
-  ],
+   ],
 });
