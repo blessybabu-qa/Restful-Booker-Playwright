@@ -36,11 +36,14 @@ async patchBooking(id: number, partialPayload: object): Promise<APIResponse> {
 async createToken(): Promise<string> {
     const response = await this.request.post(`${this.baseUrl}/auth`, {
         data: {
-            username: "admin",
-            password: "password123"
+            username: process.env.API_ADMIN_USER,
+            password: process.env.API_ADMIN_PASSWORD
         },
         headers: this.getCommonHeaders()
     });
+    if (!response.ok()) {
+        throw new Error(`Failed to create token: ${response.statusText()}`);
+    }
     const body = await response.json();
     return body.token; 
 }

@@ -23,14 +23,16 @@ export class TestData {
     static getApiBookingPayload() {
         const safeFirstName = faker.person.firstName().replace(/[^a-z]/gi, '');
         const safeLastName = faker.person.lastName().replace(/[^a-z]/gi, '');
+        const checkinDate = faker.date.soon({ days: 10 });
+        const checkoutDate = faker.date.soon({ days: 5, refDate: checkinDate });
         return {
             firstname: safeFirstName, 
             lastname: safeLastName,  
             totalprice: faker.number.int({ min: 100, max: 500 }),
             depositpaid: true,
             bookingdates: {
-                checkin: "2026-04-20",
-                checkout: "2026-04-22"
+                checkin: checkinDate.toISOString().split('T')[0],
+                checkout: checkoutDate.toISOString().split('T')[0]
             },
             additionalneeds: "Breakfast"
         };
