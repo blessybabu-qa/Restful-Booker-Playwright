@@ -49,7 +49,7 @@ A complete, production-ready E2E automation framework built with **Playwright** 
     │   ├── api/
     │   │   ├── api-ping.spec.ts
     │   │   ├── create-booking.spec.ts
-    │   │   ├── delete.booking.spec.ts
+    │   │   ├── delete-booking.spec.ts
     │   │   ├── get-booking.spec.ts
     │   │   ├── patch-booking.spec.ts
     │   │   └── put-booking.spec.ts
@@ -391,10 +391,33 @@ This ensures UI and API suites run in parallel in CI without any cross-dependenc
 |---------------------|---------------------------------------------------|----------|
 | GET /ping           | Service health check returns 201                  | Positive |
 | POST /booking       | Create booking, verify ID returned                | Positive |
+| POST /booking       | Returns 400 with completely invalid payload       | Negative |
 | GET /booking/:id    | Retrieve booking by fixture-generated ID          | Positive |
+| GET /booking/:id    | Returns 404 for non-existent booking ID           | Negative |
 | PATCH /booking/:id  | Partial update, verify changed & unchanged fields | Positive |
 | PUT /booking/:id    | Full update with dynamic token and payload        | Positive |
 | DELETE /booking/:id | Delete booking, verify 404 on subsequent GET      | Positive |
+| DELETE /booking/:id | Returns 403 when no auth token is provided        | Negative |
+
+---
+
+## 🐛 Bugs Found — API
+
+Two API bugs were discovered during testing and documented as `test.fixme` in `create-booking.spec.ts`. They are intentionally skipped in the pipeline to avoid false failures — the tests exist as living bug reports.
+
+### Bug 1 — Empty `firstname` Accepted as Valid
+
+**Endpoint:** `POST /booking`  
+**Expected:** `400 Bad Request` — an empty first name should fail validation  
+**Actual:** `200 OK` — the API accepts the booking and creates it with a blank `firstname`
+
+### Bug 2 — Missing `firstname` Key Causes a 500 Internal Server Error
+
+**Endpoint:** `POST /booking`  
+**Expected:** `400 Bad Request` — a missing required field should return a clear validation error  
+**Actual:** `500 Internal Server Error` — the server crashes when the `firstname` key is omitted entirely
+
+Both bugs point to missing input validation on the `POST /booking` endpoint. A well-behaved API should validate required fields and return a `400` with a meaningful error message rather than silently accepting incomplete data or crashing.
 
 ---
 
@@ -507,4 +530,3 @@ Everything else — fixture architecture, page object design, authentication str
 ## 🔭 Planned Improvements
 
 - [ ] Add negative UI test cases with invalid data variants (invalid email format, phone number too short, special characters in name fields)
-- [ ] Add negative API test scenarios (401 unauthorised, 404 not found, 400 bad request)
