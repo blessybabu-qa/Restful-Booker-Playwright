@@ -1,3 +1,4 @@
+
 # Restful Booker — Playwright E2E Automation Framework
 
 A complete, production-ready E2E automation framework built with **Playwright** and **TypeScript** — covering UI testing, REST API automation (GET/POST/PUT/PATCH/DELETE), cross-browser CI/CD, Docker, and live Allure reporting across the booking, room, contact, and admin features of [automationintesting.online](https://automationintesting.online).
@@ -389,21 +390,24 @@ This ensures UI and API suites run in parallel in CI without any cross-dependenc
 
 | Endpoint            | Scenario                                          | Type     |
 |---------------------|---------------------------------------------------|----------|
-| GET /ping           | Service health check returns 201                  | Positive |
-| POST /booking       | Create booking, verify ID returned                | Positive |
-| POST /booking       | Returns 400 with completely invalid payload       | Negative |
-| GET /booking/:id    | Retrieve booking by fixture-generated ID          | Positive |
-| GET /booking/:id    | Returns 404 for non-existent booking ID           | Negative |
-| PATCH /booking/:id  | Partial update, verify changed & unchanged fields | Positive |
-| PUT /booking/:id    | Full update with dynamic token and payload        | Positive |
-| DELETE /booking/:id | Delete booking, verify 404 on subsequent GET      | Positive |
-| DELETE /booking/:id | Returns 403 when no auth token is provided        | Negative |
+| GET /ping           | Service health check returns 201                         | Positive |
+| POST /booking       | Create booking, verify ID returned                       | Positive |
+| POST /booking       | Returns 400 with completely invalid payload              | Negative |
+| POST /booking       | Boundary: totalprice of 0 accepted as valid (free room)  | Boundary |
+| POST /booking       | Boundary: totalprice of 999999 accepted                  | Boundary |
+| POST /booking       | Boundary: totalprice of -1 should return 400 (bug)       | Boundary |
+| GET /booking/:id    | Retrieve booking by fixture-generated ID                 | Positive |
+| GET /booking/:id    | Returns 404 for non-existent booking ID                  | Negative |
+| PATCH /booking/:id  | Partial update, verify changed & unchanged fields        | Positive |
+| PUT /booking/:id    | Full update with dynamic token and payload               | Positive |
+| DELETE /booking/:id | Delete booking, verify 404 on subsequent GET             | Positive |
+| DELETE /booking/:id | Returns 403 when no auth token is provided               | Negative |
 
 ---
 
 ## 🐛 Bugs Found — API
 
-Two API bugs were discovered during testing and documented as `test.fixme` in `create-booking.spec.ts`. They are intentionally skipped in the pipeline to avoid false failures — the tests exist as living bug reports.
+Three API bugs were discovered during testing and documented as `test.fixme` in `create-booking.spec.ts`. They are intentionally skipped in the pipeline to avoid false failures — the tests exist as living bug reports.
 
 ### Bug 1 — Empty `firstname` Accepted as Valid
 
@@ -417,7 +421,13 @@ Two API bugs were discovered during testing and documented as `test.fixme` in `c
 **Expected:** `400 Bad Request` — a missing required field should return a clear validation error  
 **Actual:** `500 Internal Server Error` — the server crashes when the `firstname` key is omitted entirely
 
-Both bugs point to missing input validation on the `POST /booking` endpoint. A well-behaved API should validate required fields and return a `400` with a meaningful error message rather than silently accepting incomplete data or crashing.
+### Bug 3 — Negative `totalprice` Accepted as Valid
+
+**Endpoint:** `POST /booking`  
+**Expected:** `400 Bad Request` — a negative price is not a meaningful value for a booking and should be rejected  
+**Actual:** `200 OK` — the API accepts the booking with `totalprice: -1` without any validation error
+
+Bugs 1 and 2 point to missing input validation on required string fields. Bug 3 was uncovered through boundary testing of the `totalprice` field — the same boundary suite confirmed that `0` and `999999` are accepted, which is reasonable, but a negative value slipping through indicates no lower-bound guard exists on the field.
 
 ---
 
