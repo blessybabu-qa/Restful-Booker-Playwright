@@ -38,5 +38,33 @@ test.fixme('should return 400 but returning 500 when firstname key is missing (u
     expect(response.status()).toBe(400);
 });
 
+test.describe('Boundary Testing - totalprice', () => {
+
+    test('should allow totalprice to be 0 (Free Booking)', async ({ bookingService }) => {
+        const payload = TestData.getApiBookingPayload();
+        payload.totalprice = 0;
+        const response = await bookingService.createBooking(payload);
+        expect(response.status()).toBe(200);
+        const body = await response.json();
+        expect(body.booking.totalprice).toBe(0);
+    });
+
+    test.fixme('should return 400 but returning 200 when totalprice is negative (-1)', async ({ bookingService }) => {
+        const payload = TestData.getApiBookingPayload();
+        (payload as any).totalprice = -1;
+        const response = await bookingService.createBooking(payload);
+        expect(response.status()).toBe(400);
+    });
+
+    test('should allow a very large totalprice (999999)', async ({ bookingService }) => {
+        const payload = TestData.getApiBookingPayload();
+        payload.totalprice = 999999;
+        const response = await bookingService.createBooking(payload);
+        expect(response.status()).toBe(200);
+        const body = await response.json();
+        expect(body.booking.totalprice).toBe(999999);
+    });
+});
+
     
 
