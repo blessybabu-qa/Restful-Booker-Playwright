@@ -13,5 +13,30 @@ test('should successfully create a booking ', async ({ bookingService }) => {
     
 });
 
+test('should return 400 when creating a booking with invalid data', async ({ bookingService }) => {
+        const invalidPayload = true;
+        const response = await bookingService.createBooking(invalidPayload as any);
+        expect(response.status()).toBe(400);
+    
+});
+
+test.fixme('should return 400 but returning 200 when giving empty firstname ', async ({ bookingService }) => {
+        const payload = TestData.getApiBookingPayload();
+        (payload as any).firstname = '';
+        const response = await bookingService.createBooking(payload);
+        // Logic: It should be a 400 Bad Request, but the API incorrectly accepts it.
+        expect(response.status()).toBe(400);
+    
+});
+
+test.fixme('should return 400 but returning 500 when firstname key is missing (undefined)', async ({ bookingService }) => {
+    const payload = TestData.getApiBookingPayload();
+    delete (payload as any).firstname;
+    const response = await bookingService.createBooking(payload);
+    // Expectation: 400 Bad Request
+    // Reality: 500 Internal Server Error (The server crashes)
+    expect(response.status()).toBe(400);
+});
+
     
 
