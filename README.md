@@ -508,7 +508,7 @@ The calendar drag implementation was the most significant case. React Big Calend
 
 The XPath traversal used to detect existing bookings on a day cell also involved AI guidance, as the booking event element sits as a sibling in the DOM rather than a direct child of the day cell.
 
-Everything else — fixture architecture, page object design, authentication strategy, CI pipeline, data-driven structure, config design — was designed and built independently.
+AI was involved throughout the project in this way: I made the architectural and design decisions myself — what pattern to use, why, and how the pieces should fit together — and used AI to help generate the implementation, work through Playwright-specific syntax, and troubleshoot issues along the way.
 
 ---
 
@@ -522,11 +522,7 @@ Everything else — fixture architecture, page object design, authentication str
 
 **Shared environments will break your tests in creative ways.** Tests that discover their own preconditions at runtime are the only reliable solution when you do not control the environment.
 
-**CI is not optional.** Running tests locally on one browser hides enormous amounts of flakiness. Setting up GitHub Actions early surfaced cross-browser timing differences before they became ingrained habits.
-
-**TypeScript discipline pays off.** Strict typing caught several integration mistakes between `BookingService` and the fixture layer before they ever ran.
-
-**Config bugs surface in unexpected ways.** An incorrect project dependency in `playwright.config.ts` caused `baseURL` to resolve as `undefined` at runtime, producing a `Cannot navigate to invalid URL` error in all UI tests. Careful separation of API and UI project dependencies prevents this class of failure entirely.
+**CI is not optional.** Running tests only locally, usually on one browser, can hide flakiness that only shows up under different conditions. Setting up GitHub Actions early meant issues were surfaced automatically on every push, rather than relying on remembering to test manually across browsers.
 
 ---
 
