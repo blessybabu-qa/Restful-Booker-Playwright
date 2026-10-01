@@ -4,7 +4,7 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
-  workflow_dispatch: #
+  workflow_dispatch:
 
 jobs:
   api-tests:
@@ -33,7 +33,6 @@ jobs:
         name: playwright-report-api
         path: playwright-report/
         retention-days: 30
-    
     - name: Archive Allure Results
       if: always()
       uses: actions/upload-artifact@v4
@@ -67,7 +66,6 @@ jobs:
         name: playwright-report-ui
         path: playwright-report/
         retention-days: 30
-    
     - name: Archive Allure Results
       if: always()
       uses: actions/upload-artifact@v4
@@ -76,9 +74,45 @@ jobs:
         path: allure-results/
         retention-days: 1
 
+  visual-tests:
+    name: "Frontend: Visual Regression"
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.2-noble   # same image that created the baselines
+      options: --ipc=host
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies
+      run: npm ci
+    - name: Run Visual Projects
+      run: npx playwright test --project=visual-chromium --project=visual-mobile-chrome --project=visual-mobile-safari
+      env:
+        BASE_URL: ${{ vars.BASE_URL }}
+    - uses: actions/upload-artifact@v4
+      if: ${{ !cancelled() }}
+      with:
+        name: playwright-report-visual
+        path: playwright-report/
+        retention-days: 30
+    - name: Upload screenshot diffs
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: visual-diffs
+        path: test-results/
+        retention-days: 30
+    - name: Archive Allure Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: allure-results-visual
+        path: allure-results/
+        retention-days: 1
+
   deploy-to-firebase:
     name: "Deploy Allure to Firebase"
-    needs: [api-tests, ui-tests]
+    needs: [api-tests, ui-tests, visual-tests]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -92,6 +126,11 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: allure-results-ui
+        path: allure-results-combined
+    - name: Download Visual Results
+      uses: actions/download-artifact@v4
+      with:
+        name: allure-results-visual
         path: allure-results-combined
     - name: Generate Allure Report
       run: |
