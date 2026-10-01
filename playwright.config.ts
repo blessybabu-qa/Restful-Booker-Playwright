@@ -68,5 +68,23 @@ export default defineConfig({
          baseURL: process.env.BASE_URL
        },
     },
+    {
+  name: 'visual-chromium',
+  testDir: './tests/visual',
+  use: {
+    ...devices['Desktop Chrome'],
+    viewport: { width: 1280, height: 720 },
+  },
+},
+{
+  name: 'visual-mobile-chrome',
+  testDir: './tests/visual',
+  use: { ...devices['Pixel 7'] },
+},
+{
+  name: 'visual-mobile-safari',
+  testDir: './tests/visual',
+  use: { ...devices['iPhone 14'] },
+},
    ],
 });
