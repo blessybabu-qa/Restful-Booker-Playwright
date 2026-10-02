@@ -4,16 +4,16 @@ A complete, production-ready E2E automation framework built with **Playwright** 
 
 ## 🛠️ Tech Stack
 
-| Tool | Purpose |
-|---|---|
-| Playwright | Browser automation, test runner & screenshot comparison |
-| TypeScript | Strongly-typed test code |
-| Faker.js | Dynamic randomised test data |
-| dotenv | Environment variable management |
-| Allure Report | Test reporting & history tracking |
-| Firebase Hosting | Live report deployment |
-| GitHub Actions | CI/CD pipeline |
-| Docker | Containerised, reproducible runs and consistent visual baselines |
+| Tool             | Purpose                                                          |
+| ---------------- | ---------------------------------------------------------------- |
+| Playwright       | Browser automation, test runner & screenshot comparison          |
+| TypeScript       | Strongly-typed test code                                         |
+| Faker.js         | Dynamic randomised test data                                     |
+| dotenv           | Environment variable management                                  |
+| Allure Report    | Test reporting & history tracking                                |
+| Firebase Hosting | Live report deployment                                           |
+| GitHub Actions   | CI/CD pipeline                                                   |
+| Docker           | Containerised, reproducible runs and consistent visual baselines |
 
 ## 📁 Project Structure
 
@@ -22,7 +22,6 @@ A complete, production-ready E2E automation framework built with **Playwright** 
     ├── README.md
     ├── Dockerfile
     ├── firebase.json
-    ├── .env.example
     ├── package.json
     ├── playwright.config.ts
     ├── tsconfig.json
@@ -92,7 +91,7 @@ BASE_URL=https://automationintesting.online
 API_URL=https://restful-booker.herokuapp.com
 ADMIN_EMAIL=admin
 ADMIN_PASSWORD=password
-API_ADMIN_TOKEN=Basic YWRtaW46cGFzc3dvcmQ=
+API_ADMIN_TOKEN=Basic YWRtaW46cGFzc3dvcmQxMjM=
 API_ADMIN_USER=admin
 API_ADMIN_PASSWORD=password123
 EOF
@@ -106,7 +105,7 @@ BASE_URL=https://automationintesting.online
 API_URL=https://restful-booker.herokuapp.com
 ADMIN_EMAIL=admin
 ADMIN_PASSWORD=password
-API_ADMIN_TOKEN=Basic YWRtaW46cGFzc3dvcmQ=
+API_ADMIN_TOKEN=Basic YWRtaW46cGFzc3dvcmQxMjM=
 API_ADMIN_USER=admin
 API_ADMIN_PASSWORD=password123
 "@ | Set-Content .env
@@ -120,7 +119,7 @@ echo BASE_URL=https://automationintesting.online
 echo API_URL=https://restful-booker.herokuapp.com
 echo ADMIN_EMAIL=admin
 echo ADMIN_PASSWORD=password
-echo API_ADMIN_TOKEN=Basic YWRtaW46cGFzc3dvcmQ=
+echo API_ADMIN_TOKEN=Basic YWRtaW46cGFzc3dvcmQxMjM=
 echo API_ADMIN_USER=admin
 echo API_ADMIN_PASSWORD=password123
 ) > .env
@@ -301,7 +300,7 @@ BASE_URL=https://automationintesting.online
 ADMIN_EMAIL=admin
 ADMIN_PASSWORD=password
 API_URL=https://restful-booker.herokuapp.com
-API_ADMIN_TOKEN=Basic YWRtaW46cGFzc3dvcmQ=
+API_ADMIN_TOKEN=Basic YWRtaW46cGFzc3dvcmQxMjM=
 API_ADMIN_USER=admin
 API_ADMIN_PASSWORD=password123
 ```
@@ -385,11 +384,11 @@ Functional tests check that a page *works*; visual tests check that it still *lo
 
 ### What is covered
 
-| Check | Scope | Devices |
-|---|---|---|
-| Home page | Full page | Desktop Chromium, Pixel 7, iPhone 14 |
+| Check          | Scope            | Devices                              |
+| -------------- | ---------------- | ------------------------------------ |
+| Home page      | Full page        | Desktop Chromium, Pixel 7, iPhone 14 |
 | Navigation bar | Single component | Desktop Chromium, Pixel 7, iPhone 14 |
-| Footer | Single component | Desktop Chromium, Pixel 7, iPhone 14 |
+| Footer         | Single component | Desktop Chromium, Pixel 7, iPhone 14 |
 
 Comparing **individual components** as well as whole pages means a failure points directly at the part of the design that changed, instead of only reporting "the page is different".
 
@@ -420,43 +419,43 @@ Fonts and anti-aliasing render slightly differently on Windows, macOS and Linux,
 
 ### UI Tests
 
-| Area | Scenario | Type |
-|---|---|---|
-| Homepage | All main UI elements visible | Positive |
-| Room Page | Room title matches selection, image visible, description and policies present | Positive |
-| Booking | Successful end-to-end room booking flow | Positive |
-| Booking | Validation errors on empty form submission | Negative |
-| Contact Form | Successful submission with dynamic data | Positive |
-| Contact Form | Validation errors on empty form submission | Negative |
-| Admin Login | Valid credentials — data-driven | Positive |
-| Admin Login | Invalid random credentials — data-driven | Negative |
-| Admin Login | SQL injection attempt — data-driven | Negative |
-| Admin Login | Empty username — data-driven | Negative |
+| Area         | Scenario                                                                      | Type     |
+| ------------ | ----------------------------------------------------------------------------- | -------- |
+| Homepage     | All main UI elements visible                                                  | Positive |
+| Room Page    | Room title matches selection, image visible, description and policies present | Positive |
+| Booking      | Successful end-to-end room booking flow                                       | Positive |
+| Booking      | Validation errors on empty form submission                                    | Negative |
+| Contact Form | Successful submission with dynamic data                                       | Positive |
+| Contact Form | Validation errors on empty form submission                                    | Negative |
+| Admin Login  | Valid credentials — data-driven                                              | Positive |
+| Admin Login  | Invalid random credentials — data-driven                                     | Negative |
+| Admin Login  | SQL injection attempt — data-driven                                          | Negative |
+| Admin Login  | Empty username — data-driven                                                 | Negative |
 
 ### Visual Tests
 
-| Area | Scenario | Type |
-|---|---|---|
-| Home page | Full page matches baseline on desktop and mobile | Visual |
+| Area           | Scenario                                         | Type   |
+| -------------- | ------------------------------------------------ | ------ |
+| Home page      | Full page matches baseline on desktop and mobile | Visual |
 | Navigation bar | Component matches baseline on desktop and mobile | Visual |
-| Footer | Component matches baseline on desktop and mobile | Visual |
+| Footer         | Component matches baseline on desktop and mobile | Visual |
 
 ### API Tests
 
-| Endpoint | Scenario | Type |
-|---|---|---|
-| GET /ping | Service health check returns 201 | Positive |
-| POST /booking | Create booking, verify ID returned | Positive |
-| POST /booking | Returns 400 with completely invalid payload | Negative |
-| POST /booking | Boundary: totalprice of 0 accepted as valid (free room) | Boundary |
-| POST /booking | Boundary: totalprice of 999999 accepted | Boundary |
-| POST /booking | Boundary: totalprice of -1 should return 400 (bug) | Boundary |
-| GET /booking/:id | Retrieve booking by fixture-generated ID | Positive |
-| GET /booking/:id | Returns 404 for non-existent booking ID | Negative |
-| PATCH /booking/:id | Partial update, verify changed & unchanged fields | Positive |
-| PUT /booking/:id | Full update with dynamic token and payload | Positive |
-| DELETE /booking/:id | Delete booking, verify 404 on subsequent GET | Positive |
-| DELETE /booking/:id | Returns 403 when no auth token is provided | Negative |
+| Endpoint            | Scenario                                                | Type     |
+| ------------------- | ------------------------------------------------------- | -------- |
+| GET /ping           | Service health check returns 201                        | Positive |
+| POST /booking       | Create booking, verify ID returned                      | Positive |
+| POST /booking       | Returns 400 with completely invalid payload             | Negative |
+| POST /booking       | Boundary: totalprice of 0 accepted as valid (free room) | Boundary |
+| POST /booking       | Boundary: totalprice of 999999 accepted                 | Boundary |
+| POST /booking       | Boundary: totalprice of -1 should return 400 (bug)      | Boundary |
+| GET /booking/:id    | Retrieve booking by fixture-generated ID                | Positive |
+| GET /booking/:id    | Returns 404 for non-existent booking ID                 | Negative |
+| PATCH /booking/:id  | Partial update, verify changed & unchanged fields       | Positive |
+| PUT /booking/:id    | Full update with dynamic token and payload              | Positive |
+| DELETE /booking/:id | Delete booking, verify 404 on subsequent GET            | Positive |
+| DELETE /booking/:id | Returns 403 when no auth token is provided              | Negative |
 
 ## 🐛 Bugs Found — API
 
@@ -488,7 +487,7 @@ Bugs 1 and 2 point to missing input validation on required string fields. Bug 3 
 
 An Allure report is automatically generated on every CI run and deployed to Firebase Hosting. It combines the API, UI and visual test results.
 
-🔗 **[View Latest Allure Report](YOUR_FIREBASE_REPORT_URL)**
+🔗 **[View Latest Allure Report](https://restful-booker-qa.web.app)**
 
 The report provides:
 
@@ -512,16 +511,16 @@ A separate `docker-tests.yml` workflow is available for manual dispatch. It buil
 
 ### Required GitHub Secrets & Variables
 
-| Name | Type | Description |
-|---|---|---|
-| ADMIN_EMAIL | Secret | Admin login email for UI tests |
-| ADMIN_PASSWORD | Secret | Admin login password for UI tests |
-| API_ADMIN_TOKEN | Secret | Bearer token for PATCH endpoint authentication |
-| API_ADMIN_USER | Secret | Username for API token generation (PUT/DELETE) |
-| API_ADMIN_PASSWORD | Secret | Password for API token generation (PUT/DELETE) |
-| FIREBASE_SERVICE_ACCOUNT_RESTFUL_BOOKER | Secret | Firebase deployment credentials |
-| BASE_URL | Variable | UI target environment URL (also used by visual tests) |
-| API_URL | Variable | API target environment URL |
+| Name                                    | Type     | Description                                           |
+| --------------------------------------- | -------- | ----------------------------------------------------- |
+| ADMIN_EMAIL                             | Secret   | Admin login email for UI tests                        |
+| ADMIN_PASSWORD                          | Secret   | Admin login password for UI tests                     |
+| API_ADMIN_TOKEN                         | Secret   | Basic auth token for PATCH endpoint authentication       |
+| API_ADMIN_USER                          | Secret   | Username for API token generation (PUT/DELETE)        |
+| API_ADMIN_PASSWORD                      | Secret   | Password for API token generation (PUT/DELETE)        |
+| FIREBASE_SERVICE_ACCOUNT_RESTFUL_BOOKER | Secret   | Firebase deployment credentials                       |
+| BASE_URL                                | Variable | UI target environment URL (also used by visual tests) |
+| API_URL                                 | Variable | API target environment URL                            |
 
 ## 🧩 Technical Challenges & Solutions
 

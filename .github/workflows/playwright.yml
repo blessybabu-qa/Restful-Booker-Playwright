@@ -18,8 +18,6 @@ jobs:
         node-version: lts/*
     - name: Install dependencies
       run: npm ci
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
     - name: Run API & Setup Projects
       run: npx playwright test --project=setup --project=api-tests
       env:

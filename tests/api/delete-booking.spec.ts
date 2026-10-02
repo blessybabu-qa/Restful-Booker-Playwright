@@ -12,7 +12,7 @@ test('should delete a booking and verify it no longer exists', async ({
     expect(getResponse.status()).toBe(404);
     });
 
-test('should return 401 when deleting a booking without proper authentication', async ({ 
+test('should return 403 when deleting a booking without proper authentication', async ({ 
     bookingService, 
     preCreatedBookingId, 
 }) => {

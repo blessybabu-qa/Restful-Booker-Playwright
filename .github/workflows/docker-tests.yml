@@ -19,6 +19,8 @@ jobs:
         -v "${{ github.workspace }}/allure-results:/app/allure-results"
         -e API_URL="${{ vars.API_URL }}"
         -e API_ADMIN_TOKEN="${{ secrets.API_ADMIN_TOKEN }}"
+        -e API_ADMIN_USER="${{ secrets.API_ADMIN_USER }}"
+        -e API_ADMIN_PASSWORD="${{ secrets.API_ADMIN_PASSWORD }}"
         -e BASE_URL="${{ vars.BASE_URL }}"
         -e ADMIN_EMAIL="${{ secrets.ADMIN_EMAIL }}"
         -e ADMIN_PASSWORD="${{ secrets.ADMIN_PASSWORD }}"
