@@ -1,4 +1,5 @@
 import { Locator, Page, expect,test } from '@playwright/test';
+import { faker } from '@faker-js/faker';
 import { BasePage } from "./BasePage";
 
 export class BookingPage extends BasePage {
@@ -11,9 +12,11 @@ export class BookingPage extends BasePage {
     readonly email: Locator;
     readonly phone: Locator;
     readonly alert: Locator
-    readonly bookingConfirmation: Locator;
+    readonly successMessage: Locator;
     readonly selectedDatesDisplay: Locator;
     readonly returnHomeButton: Locator
+    readonly monthLabel: Locator;
+    readonly calendarDays: Locator;
 
      constructor(page: Page) {
         super(page); 
@@ -26,9 +29,11 @@ export class BookingPage extends BasePage {
         this.email = page.getByRole('textbox', { name: 'Email' });
         this.phone = page.getByRole('textbox', { name: 'Phone' });
         this.alert = page.locator('.alert.alert-danger');
-        this.bookingConfirmation = page.getByRole('heading', { name: 'Booking Confirmed' });
+        this.successMessage = page.getByRole('heading', { name: 'Booking Confirmed' });
         this.selectedDatesDisplay =page.locator('p.text-center.pt-2 strong');
         this.returnHomeButton = page.getByRole('link', { name: 'Return home' });
+        this.monthLabel = page.locator('.rbc-toolbar-label');
+        this.calendarDays = page.locator('.rbc-day-bg:not(.rbc-off-range-bg)');
         } 
 
         async verifyBookingSectionIsVisible() {
@@ -36,37 +41,45 @@ export class BookingPage extends BasePage {
        }
 
     async selectCheckInCheckOutDates() {
-    const maxMonths = 5;
+        // The calendar doesn't show booked days, so jump a random 1-12 months ahead
+        // to make it unlikely that two runs pick the same dates
+        const monthsAhead = faker.number.int({ min: 1, max: 12 });
+        for (let i = 0; i < monthsAhead; i++) {
+            await this.goToNextMonth();
+        }
 
-    for (let i = 0; i < maxMonths; i++) {
-        await this.page.waitForTimeout(2000); 
+        const shownMonth = await this.monthLabel.innerText();
+        const firstOfMonth = new Date(`1 ${shownMonth}`);
+        const dayCount = await this.calendarDays.count();
 
-        const dayCells = this.page.locator('.rbc-day-bg:not(.rbc-off-range)');
-        const cellCount = await dayCells.count();
-
-        for (let j = 0; j < cellCount - 1; j++) {
-            const dayA = dayCells.nth(j);
-            const dayB = dayCells.nth(j + 1);
-            const hasEventA = await dayA.locator('xpath=./../..//*[contains(@class, "rbc-event")]').count() > 0;
-            const hasEventB = await dayB.locator('xpath=./../..//*[contains(@class, "rbc-event")]').count() > 0;
-
-            if (!hasEventA && !hasEventB) {
-                const boxA = await dayA.boundingBox();
-                const boxB = await dayB.boundingBox();
-
-                if (boxA && boxB) {
-                    await this.page.mouse.move(boxA.x + (boxA.width / 2), boxA.y + (boxA.height / 2));
-                    await this.page.mouse.down();
-                    await this.page.mouse.move(boxB.x + (boxB.width / 2), boxB.y + (boxB.height / 2), { steps: 60 });
-                    await this.page.waitForTimeout(500); 
-                    await this.page.mouse.up();
-                    return; 
-                }
+        const startDays: number[] = [];
+        for (let day = 1; day < dayCount; day++) {
+            const checkin = new Date(firstOfMonth.getFullYear(), firstOfMonth.getMonth(), day);
+            // Saturday and the next Sunday are in different calendar rows, so don't drag across them
+            if (checkin.getDay() !== 6) {
+                startDays.push(day);
             }
         }
-        await this.nextMonth.click();
+
+        const startDay = faker.helpers.arrayElement(startDays);
+        await this.dragBetweenDays(this.calendarDays.nth(startDay - 1), this.calendarDays.nth(startDay));
     }
-}
+
+    private async goToNextMonth() {
+        const shownMonth = await this.monthLabel.innerText();
+        await this.nextMonth.click();
+        await expect(this.monthLabel).not.toHaveText(shownMonth);
+    }
+
+    private async dragBetweenDays(firstDay: Locator, secondDay: Locator) {
+        const firstBox = await firstDay.boundingBox();
+        const secondBox = await secondDay.boundingBox();
+        await this.page.mouse.move(firstBox!.x + firstBox!.width / 2, firstBox!.y + firstBox!.height / 2);
+        await this.page.mouse.down();
+        await this.page.mouse.move(secondBox!.x + secondBox!.width / 2, secondBox!.y + secondBox!.height / 2, { steps: 60 });
+        await this.page.mouse.up();
+    }
+
     async clickReserve() {
         await this.reserveButton.click();
     }
@@ -100,23 +113,7 @@ export class BookingPage extends BasePage {
     await this.phone.fill(details.phone);
 }
 
-async verifyBookingSuccess(): Promise<boolean> {
-    await Promise.race([
-        this.bookingConfirmation.waitFor({ state: 'visible', timeout: 15000 }).catch(() => {}),
-        this.page.getByText('Application error').waitFor({ state: 'visible', timeout: 15000 }).catch(() => {})
-    ]);
-    const isAppError = await this.page.getByText('Application error').isVisible();
-    if (isAppError) {
-       
-        return false; 
-    }
-    try {
-        await expect(this.bookingConfirmation).toBeVisible({ timeout: 5000 });
-        await this.returnHomeButton.click();
-        await expect(this.bookingConfirmation).toBeHidden();
-        return true;
-    } catch (e) {
-        return false;
-    }
+async verifyBookingSuccess() {
+    await expect(this.successMessage, 'Booking was not confirmed. Check the screenshot for an error page').toBeVisible({ timeout: 15000 });
 }
 }
