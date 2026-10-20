@@ -20,21 +20,24 @@ test('should return 400 when creating a booking with invalid data', async ({ boo
     
 });
 
-test.fixme('should return 400 but returning 200 when giving empty firstname ', async ({ bookingService }) => {
+test('should return 400 when firstname is empty', {
+    annotation: { type: 'known bug', description: 'API returns 200 and creates the booking with a blank firstname' },
+}, async ({ bookingService }) => {
+        test.fail();
         const payload = TestData.getApiBookingPayload();
         (payload as any).firstname = '';
         const response = await bookingService.createBooking(payload);
-        // Logic: It should be a 400 Bad Request, but the API incorrectly accepts it.
         expect(response.status()).toBe(400);
-    
+
 });
 
-test.fixme('should return 400 but returning 500 when firstname key is missing (undefined)', async ({ bookingService }) => {
+test('should return 400 when firstname is missing', {
+    annotation: { type: 'known bug', description: 'API returns 500 Internal Server Error when the firstname field is left out' },
+}, async ({ bookingService }) => {
+    test.fail();
     const payload = TestData.getApiBookingPayload();
     delete (payload as any).firstname;
     const response = await bookingService.createBooking(payload);
-    // Expectation: 400 Bad Request
-    // Reality: 500 Internal Server Error (The server crashes)
     expect(response.status()).toBe(400);
 });
 
@@ -49,7 +52,10 @@ test.describe('Boundary Testing - totalprice', () => {
         expect(body.booking.totalprice).toBe(0);
     });
 
-    test.fixme('should return 400 but returning 200 when totalprice is negative (-1)', async ({ bookingService }) => {
+    test('should return 400 when totalprice is negative', {
+        annotation: { type: 'known bug', description: 'API returns 200 and creates the booking with totalprice -1' },
+    }, async ({ bookingService }) => {
+        test.fail();
         const payload = TestData.getApiBookingPayload();
         (payload as any).totalprice = -1;
         const response = await bookingService.createBooking(payload);
