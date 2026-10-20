@@ -9,6 +9,7 @@ A complete, production-ready E2E automation framework built with **Playwright** 
 | Playwright       | Browser automation, test runner & screenshot comparison          |
 | TypeScript       | Strongly-typed test code                                         |
 | Faker.js         | Dynamic randomised test data                                     |
+| Ajv              | JSON schema validation of API responses                          |
 | dotenv           | Environment variable management                                  |
 | Allure Report    | Test reporting & history tracking                                |
 | Firebase Hosting | Live report deployment                                           |
@@ -40,14 +41,21 @@ A complete, production-ready E2E automation framework built with **Playwright** 
     │   ├── POManager.ts
     │   ├── RoomPage.ts
     │   └── TestData.ts
+    ├── schemas/                        # JSON schemas for API responses
+    │   ├── booking.schema.ts
+    │   ├── create-booking.schema.ts
+    │   └── token.schema.ts
     ├── tests/
     │   ├── api/
     │   │   ├── api-ping.spec.ts
+    │   │   ├── auth.spec.ts
     │   │   ├── create-booking.spec.ts
     │   │   ├── delete-booking.spec.ts
     │   │   ├── get-booking.spec.ts
     │   │   ├── patch-booking.spec.ts
-    │   │   └── put-booking.spec.ts
+    │   │   ├── put-booking.spec.ts
+    │   │   ├── response-time.spec.ts
+    │   │   └── schema-validation.spec.ts
     │   ├── UI/
     │   │   ├── booking.spec.ts
     │   │   ├── contact.spec.ts
@@ -452,14 +460,20 @@ Fonts and anti-aliasing render slightly differently on Windows, macOS and Linux,
 | POST /booking       | Boundary: totalprice of -1 should return 400 (bug)      | Boundary |
 | GET /booking/:id    | Retrieve booking by fixture-generated ID                | Positive |
 | GET /booking/:id    | Returns 404 for non-existent booking ID                 | Negative |
+| POST /booking       | Empty or missing firstname should return 400 (bugs)     | Negative |
 | PATCH /booking/:id  | Partial update, verify changed & unchanged fields       | Positive |
+| PATCH /booking/:id  | Returns 403 with no token or an invalid token           | Negative |
 | PUT /booking/:id    | Full update with dynamic token and payload              | Positive |
+| PUT /booking/:id    | Returns 403 with no token or an invalid token           | Negative |
 | DELETE /booking/:id | Delete booking, verify 404 on subsequent GET            | Positive |
-| DELETE /booking/:id | Returns 403 when no auth token is provided              | Negative |
+| DELETE /booking/:id | Returns 403 with no token or an invalid token           | Negative |
+| POST /auth          | Wrong credentials return "Bad credentials" and no token | Negative |
+| All main endpoints  | Responses match their JSON schema (Ajv)                 | Schema   |
+| POST/GET booking, auth | Response arrives within 2 seconds                    | Timing   |
 
 ## 🐛 Bugs Found — API
 
-Three API bugs were discovered during testing and documented as `test.fixme` in `create-booking.spec.ts`. They are intentionally skipped in the pipeline to avoid false failures — the tests exist as living bug reports.
+Three API bugs were discovered during testing. They are kept in `create-booking.spec.ts` as tests marked with `test.fail()` and a `known bug` annotation. The tests run in every pipeline and pass while the bug still exists; if the API is fixed, the test turns red as a signal to remove `test.fail()`.
 
 ### Bug 1 — Empty `firstname` Accepted as Valid
 
@@ -526,15 +540,15 @@ A separate `docker-tests.yml` workflow is available for manual dispatch. It buil
 
 ### Challenge 1: Booking a Room Without Knowing Which Dates Are Free
 
-The booking calendar renders a live React Big Calendar populated with real reservations from a shared demo site. Hardcoding a date range worked locally but failed in CI because another user had already booked those dates. The solution was a dynamic date-picker that scans the visible calendar grid at runtime, checks each cell for an existing booking marker, and finds the first consecutive free pair. If the current month is fully booked, it navigates forward up to five months ahead. API booking dates are similarly generated dynamically at runtime using `faker.date.soon()` with a `refDate` to guarantee check-out always falls after check-in.
+The booking calendar is a React Big Calendar on a shared demo site, and it does not show which days are already booked. Booking the same dates twice makes the server return 409 Conflict and the site shows an error page. The date picker therefore moves a random 1-12 months ahead, skips the greyed-out days of other months, and drags across a random pair of days in the same week. Random dates make it unlikely that two runs clash. API booking dates are generated at runtime using `faker.date.soon()` with a `refDate` to guarantee check-out always falls after check-in.
 
 ### Challenge 2: Third-Party Server Instability
 
-The target site occasionally throws an application error mid-test. Rather than letting the test fail with a misleading assertion error, the booking success check detects the error page first and returns early. The spec marks the test as skipped with a clear explanation, keeping the suite clean for genuine failures.
+The target site occasionally shows an error page mid-test. The booking test does not skip in that case: it fails with a clear message ("Booking was not confirmed. Check the screenshot for an error page"), and the screenshot shows what happened. In CI, retries re-run the test, so a one-off error shows up as flaky rather than failed, while a real problem stays red.
 
 ### Challenge 3: API Authentication — Two Methods, One Codebase
 
-The API supports Bearer token authentication for PATCH and session cookie authentication for PUT and DELETE. Authentication strategy is split by HTTP method in `BookingService.ts` — the `patchBooking` method reads the bearer token from `API_ADMIN_TOKEN` in the environment, while `updateBooking` and `deleteBooking` accept a dynamic session token generated fresh per test via the `authToken` fixture. Token creation reads credentials from `API_ADMIN_USER` and `API_ADMIN_PASSWORD` environment variables and throws a descriptive error immediately if the auth endpoint returns a non-OK response.
+The API supports Basic authentication for PATCH and session cookie authentication for PUT and DELETE. Authentication strategy is split by HTTP method in `BookingService.ts` — `patchBooking` takes an `Authorization` value (the tests pass `API_ADMIN_TOKEN` from the environment), while `updateBooking` and `deleteBooking` accept a session token generated fresh per test via the `authToken` fixture. All three send no auth header when none is given, which the 403 tests rely on. Token creation reads credentials from `API_ADMIN_USER` and `API_ADMIN_PASSWORD` environment variables and throws a descriptive error immediately if the auth endpoint returns a non-OK response.
 
 ### Challenge 4: Preventing Silent Credential Failures in Data-Driven Tests
 
@@ -560,9 +574,7 @@ The main Dockerfile is based on a different image than the visual baselines, so 
 
 I used AI as a pairing tool at specific points where the problem was well-defined but the solution required specialist knowledge I did not have on hand.
 
-The calendar drag implementation was the most significant case. React Big Calendar uses synthetic drag events and a standard drag-and-drop sequence does not trigger date selection. I used AI to understand the correct mouse event sequence and coordinate maths for targeting cell centres using bounding box data. The dynamic availability-scanning logic that wraps the drag was written independently.
-
-The XPath traversal used to detect existing bookings on a day cell also involved AI guidance, as the booking event element sits as a sibling in the DOM rather than a direct child of the day cell.
+The calendar drag implementation was the most significant case. React Big Calendar uses synthetic drag events and a standard drag-and-drop sequence does not trigger date selection. I used AI to understand the correct mouse event sequence and coordinate maths for targeting cell centres using bounding box data.
 
 AI was involved throughout the project in this way: I made the architectural and design decisions myself — what pattern to use, why, and how the pieces should fit together — and used AI to help generate the implementation, work through Playwright-specific syntax, and troubleshoot issues along the way.
 
@@ -577,7 +589,7 @@ AI was involved throughout the project in this way: I made the architectural and
 
 ## 📌 Notes
 
-- This project targets automationintesting.online, a public shared demo environment that occasionally returns server errors. Booking tests handle this gracefully by skipping rather than failing.
+- This project targets automationintesting.online, a public shared demo environment that occasionally returns server errors. Booking tests fail with a clear message and a screenshot, and CI retries absorb one-off errors.
 - Because the demo site is shared and live, its content can change. If a visual test fails, check the diff image to decide whether it is an unexpected regression or an intended content change, and update the baselines only in the second case.
 - Test coverage is intentionally scoped to selected user journeys. The framework is designed to be extended incrementally.
 
