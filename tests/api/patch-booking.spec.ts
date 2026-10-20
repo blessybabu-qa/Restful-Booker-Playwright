@@ -5,7 +5,7 @@ test('should partially update and verify data has changed', async ({ bookingServ
         const initialResponse = await bookingService.getBookingById(preCreatedBookingId);
         const initialBody = await initialResponse.json();
         const patchData = TestData.getPatchPayload();
-        const response = await bookingService.patchBooking(preCreatedBookingId, patchData);
+        const response = await bookingService.patchBooking(preCreatedBookingId, patchData, process.env.API_ADMIN_TOKEN);
         expect(response).toBeOK();
         const updatedBody = await response.json();
         expect(updatedBody.firstname).toBe(patchData.firstname);
@@ -13,3 +13,19 @@ test('should partially update and verify data has changed', async ({ bookingServ
         expect(updatedBody.lastname).toBe(initialBody.lastname);
 
     });
+
+test('should return 403 when patching a booking without a token', async ({ bookingService, preCreatedBookingId }) => {
+    const patchData = TestData.getPatchPayload();
+
+    const response = await bookingService.patchBooking(preCreatedBookingId, patchData);
+
+    expect(response.status()).toBe(403);
+});
+
+test('should return 403 when patching a booking with an invalid token', async ({ bookingService, preCreatedBookingId }) => {
+    const patchData = TestData.getPatchPayload();
+
+    const response = await bookingService.patchBooking(preCreatedBookingId, patchData, 'Basic invalid-token');
+
+    expect(response.status()).toBe(403);
+});

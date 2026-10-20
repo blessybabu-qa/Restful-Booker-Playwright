@@ -15,3 +15,19 @@ test('should fully update booking using dynamic token and fixture ID', async ({
        expect(updatedBody).toMatchObject(updatedPayload);
        expect(updatedBody).not.toStrictEqual(initialBody);
     });
+
+test('should return 403 when updating a booking without a token', async ({ bookingService, preCreatedBookingId }) => {
+    const updatedPayload = TestData.getApiBookingPayload();
+
+    const response = await bookingService.updateBooking(preCreatedBookingId, updatedPayload);
+
+    expect(response.status()).toBe(403);
+});
+
+test('should return 403 when updating a booking with an invalid token', async ({ bookingService, preCreatedBookingId }) => {
+    const updatedPayload = TestData.getApiBookingPayload();
+
+    const response = await bookingService.updateBooking(preCreatedBookingId, updatedPayload, 'invalid-token');
+
+    expect(response.status()).toBe(403);
+});
