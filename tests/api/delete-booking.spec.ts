@@ -12,13 +12,22 @@ test('should delete a booking and verify it no longer exists', async ({
     expect(getResponse.status()).toBe(404);
     });
 
-test('should return 403 when deleting a booking without proper authentication', async ({ 
-    bookingService, 
-    preCreatedBookingId, 
+test('should return 403 when deleting a booking without a token', async ({
+    bookingService,
+    preCreatedBookingId,
 }) => {
-    
-    const deleteResponse = await bookingService.deleteBooking(preCreatedBookingId,"");
+
+    const deleteResponse = await bookingService.deleteBooking(preCreatedBookingId);
     expect(deleteResponse.status()).toBe(403);
     const getResponse = await bookingService.getBookingById(preCreatedBookingId);
     expect(getResponse.status()).toBe(200);
     });
+
+test('should return 403 when deleting a booking with an invalid token', async ({ bookingService, preCreatedBookingId }) => {
+    const deleteResponse = await bookingService.deleteBooking(preCreatedBookingId, 'invalid-token');
+
+    expect(deleteResponse.status()).toBe(403);
+
+    const getResponse = await bookingService.getBookingById(preCreatedBookingId);
+    expect(getResponse.status()).toBe(200);
+});
