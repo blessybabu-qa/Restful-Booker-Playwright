@@ -1,4 +1,5 @@
-import { test as base, APIRequestContext } from '@playwright/test';
+import { APIRequestContext } from '@playwright/test';
+import { test as base, createBdd } from 'playwright-bdd';
 import { POManager } from './POManager';
 import { BookingService } from '../api-clients/BookingService';
 import { TestData } from '../pages/TestData';
@@ -9,6 +10,7 @@ type MyFixtures = {
     bookingService: BookingService;
     preCreatedBookingId: number;
     authToken: string;
+    testContext: Record<string, any>;
 };
 
 export const test = base.extend<MyFixtures>({
@@ -46,6 +48,13 @@ export const test = base.extend<MyFixtures>({
         const token = await bookingService.createToken();
         await use(token);
     },
-  });      
+
+    // Lets BDD steps share data (payload, response) within one scenario
+    testContext: async ({}, use) => {
+        await use({});
+    },
+  });
+
+export const { Given, When, Then } = createBdd(test);
 
 export { expect } from '@playwright/test';

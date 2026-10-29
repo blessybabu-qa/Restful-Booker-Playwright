@@ -1,11 +1,24 @@
 import { defineConfig, devices } from '@playwright/test';
+import { defineBddConfig } from 'playwright-bdd';
 import dotenv from 'dotenv';
 import path from 'path';
 
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.resolve(__dirname, '.env') }); 
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+
+const bddApiTestDir = defineBddConfig({
+  features: 'features/api/*.feature',
+  steps: ['steps/api/*.ts', 'pages/fixtures.ts'],
+  outputDir: '.features-gen/api',
+});
+
+const bddUiTestDir = defineBddConfig({
+  features: 'features/ui/*.feature',
+  steps: ['steps/ui/*.ts', 'pages/fixtures.ts'],
+  outputDir: '.features-gen/ui',
+});
 
 export default defineConfig({
   testDir: './tests',
@@ -86,5 +99,19 @@ export default defineConfig({
   testDir: './tests/visual',
   use: { ...devices['iPhone 14'] },
 },
+    {
+      name: 'bdd-api',
+      testDir: bddApiTestDir,
+      dependencies: ['setup'],
+      use: { baseURL: process.env.API_URL },
+    },
+    {
+      name: 'bdd-ui',
+      testDir: bddUiTestDir,
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: process.env.BASE_URL,
+      },
+    },
    ],
 });

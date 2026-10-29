@@ -108,9 +108,48 @@ jobs:
         path: allure-results/
         retention-days: 1
 
+  bdd-tests:
+    name: "BDD: Gherkin Scenarios"
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
+    - name: Install dependencies
+      run: npm ci
+    - name: Install Playwright Chromium
+      run: npx playwright install --with-deps chromium
+    - name: Generate BDD Tests
+      run: npx bddgen
+    - name: Run BDD Projects
+      run: npx playwright test --project=bdd-api --project=bdd-ui
+      env:
+        BASE_URL: ${{ vars.BASE_URL }}
+        API_URL: ${{ vars.API_URL }}
+        ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+        ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        API_ADMIN_TOKEN: ${{ secrets.API_ADMIN_TOKEN }}
+        API_ADMIN_USER: ${{ secrets.API_ADMIN_USER }}
+        API_ADMIN_PASSWORD: ${{ secrets.API_ADMIN_PASSWORD }}
+    - uses: actions/upload-artifact@v4
+      if: ${{ !cancelled() }}
+      with:
+        name: playwright-report-bdd
+        path: playwright-report/
+        retention-days: 30
+    - name: Archive Allure Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: allure-results-bdd
+        path: allure-results/
+        retention-days: 1
+
   deploy-to-firebase:
     name: "Deploy Allure to Firebase"
-    needs: [api-tests, ui-tests, visual-tests]
+    needs: [api-tests, ui-tests, visual-tests, bdd-tests]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -129,6 +168,11 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: allure-results-visual
+        path: allure-results-combined
+    - name: Download BDD Results
+      uses: actions/download-artifact@v4
+      with:
+        name: allure-results-bdd
         path: allure-results-combined
     - name: Generate Allure Report
       run: |

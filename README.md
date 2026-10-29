@@ -8,6 +8,7 @@ A complete, production-ready E2E automation framework built with **Playwright** 
 | ---------------- | ---------------------------------------------------------------- |
 | Playwright       | Browser automation, test runner & screenshot comparison          |
 | TypeScript       | Strongly-typed test code                                         |
+| playwright-bdd   | BDD scenarios in Gherkin, run by Playwright's own test runner    |
 | Faker.js         | Dynamic randomised test data                                     |
 | Ajv              | JSON schema validation of API responses                          |
 | dotenv           | Environment variable management                                  |
@@ -31,6 +32,18 @@ A complete, production-ready E2E automation framework built with **Playwright** 
     ├── api-clients/
     │   ├── BaseService.ts
     │   └── BookingService.ts
+    ├── features/                       # BDD scenarios in Gherkin
+    │   ├── api/
+    │   │   └── booking-api.feature
+    │   └── ui/
+    │       ├── admin-login.feature
+    │       └── booking-ui.feature
+    ├── steps/                          # step definitions for the feature files
+    │   ├── api/
+    │   │   └── booking.steps.ts
+    │   └── ui/
+    │       ├── admin-login.steps.ts
+    │       └── booking.steps.ts
     ├── pages/
     │   ├── AdminLoginPage.ts
     │   ├── BasePage.ts
@@ -331,6 +344,9 @@ npx playwright test --project=ui-chromium --project=ui-firefox --project=ui-webk
 # Visual regression tests (desktop + mobile)
 npx playwright test --project=visual-chromium --project=visual-mobile-chrome --project=visual-mobile-safari
 
+# BDD scenarios (generates the tests from the feature files, then runs them)
+npm run test:bdd
+
 # Single spec file
 npx playwright test tests/UI/booking.spec.ts
 ```
@@ -363,6 +379,8 @@ A central `POManager` class instantiates all page objects in one place and is in
 
 API fixtures provide a `bookingService`, a `preCreatedBookingId` (booking created before the test runs), and an `authToken` — keeping test logic clean and setup out of spec files.
 
+The base `test` comes from `playwright-bdd`, which extends Playwright's own `test`, so the same fixtures work in the normal specs and in the BDD step definitions.
+
 ### Dynamic Test Data
 
 `TestData.ts` uses Faker.js to generate randomised data on every test run — including dynamic future-dated check-in and check-out dates calculated at runtime using `faker.date.soon()`. No hardcoded values anywhere in the test or data layer.
@@ -377,14 +395,15 @@ Sensitive credentials and environment-specific URLs are managed via a `.env` fil
 
 ### Project Separation — API vs UI vs Visual
 
-The Playwright config separates concerns cleanly across eight independent projects:
+The Playwright config separates concerns cleanly across ten independent projects:
 
 - **setup** — runs the API health check (`api-ping.spec.ts`) as a standalone gate
 - **api-tests** — depends on `setup`; runs all API specs excluding the ping via a negative lookahead regex (`(?!api-ping)`) to prevent the health check running twice
 - **ui-chromium, ui-firefox, ui-webkit** — run UI specs independently across all three browser engines with no dependency on the API projects
 - **visual-chromium, visual-mobile-chrome, visual-mobile-safari** — run the visual regression suite on a desktop viewport (1280×720), an Android device (Pixel 7) and an iPhone (iPhone 14), each with its own baseline screenshots
+- **bdd-api, bdd-ui** — run the BDD scenarios generated from `features/api` and `features/ui`; `bdd-api` also depends on `setup`
 
-This ensures the API, UI and visual suites run in parallel in CI without any cross-dependency.
+This ensures the API, UI, visual and BDD suites run in parallel in CI without any cross-dependency.
 
 ## 📸 Visual Regression Testing
 
@@ -422,6 +441,48 @@ Each device gets its own baseline, because the same page legitimately looks diff
 ### Why baselines are created in Docker
 
 Fonts and anti-aliasing render slightly differently on Windows, macOS and Linux, so a baseline created on a Windows laptop never matches a Linux CI runner pixel for pixel. Baselines are therefore stored per OS (`-win32.png` for local development, `-linux.png` for CI), and the Linux baselines are generated inside the official Playwright image **v1.58.2-noble** — the exact image the CI job uses. Local and CI runs share the same rendering environment, so failures reflect real visual changes rather than environment noise.
+
+## 🥒 BDD Scenarios (Gherkin)
+
+A small set of core journeys is also written as Gherkin scenarios with [playwright-bdd](https://github.com/vitalets/playwright-bdd).
+
+### Why BDD was added
+
+Feature files describe behaviour in plain business language, so a product owner, developer or manual tester can read what is tested without reading code. In a real team these scenarios would be agreed before development as acceptance criteria. Here they are added to an existing application to show how a Gherkin layer fits on top of an existing framework: the step definitions only call the existing page objects, API clients and test data, so there are no locators and no duplicated logic in the BDD layer.
+
+### How it works
+
+- `features/` holds the `.feature` files, written in plain English
+- `steps/` holds the step definitions — each step is a few lines that call `pom`, `bookingService` or `TestData`
+- `bddgen` turns the feature files into Playwright tests in `.features-gen/` (git-ignored), which then run like any other spec with the same fixtures, retries and reporters
+- a `testContext` fixture lets the steps of one scenario share data such as the payload and the response; every scenario gets a new, empty one
+
+### How to run
+
+```bash
+npm run test:bdd
+```
+
+### Example scenario
+
+```gherkin
+Scenario: Update an existing booking
+  Given a booking already exists
+  And I have valid booking details
+  When I update the booking
+  Then the booking is updated with the new details
+```
+
+### Scenarios covered
+
+| Feature           | Scenario                                                  | Type     |
+| ----------------- | --------------------------------------------------------- | -------- |
+| Booking API       | Create a booking and check it is saved                    | Positive |
+| Booking API       | Update an existing booking                                | Positive |
+| Booking API       | Delete a booking                                          | Positive |
+| Room booking (UI) | Guest books a room                                        | Positive |
+| Admin login (UI)  | Admin logs in with correct details                        | Positive |
+| Admin login (UI)  | Admin cannot log in with wrong details — Scenario Outline | Negative |
 
 ## ✅ Test Coverage
 
@@ -499,7 +560,7 @@ Bugs 1 and 2 point to missing input validation on required string fields. Bug 3 
 
 ### Allure Report — Live on Firebase
 
-An Allure report is automatically generated on every CI run and deployed to Firebase Hosting. It combines the API, UI and visual test results.
+An Allure report is automatically generated on every CI run and deployed to Firebase Hosting. It combines the API, UI, visual and BDD test results.
 
 🔗 **[View Latest Allure Report](https://restful-booker-qa.web.app)**
 
@@ -512,14 +573,15 @@ The report provides:
 
 ## ⚙️ CI/CD
 
-Tests run automatically on every push and pull request to `main` via GitHub Actions. The pipeline is split into four jobs:
+Tests run automatically on every push and pull request to `main` via GitHub Actions. The pipeline is split into five jobs:
 
 1. **Backend: API Suite** — runs the `setup` and `api-tests` projects
 2. **Frontend: UI Suite** — runs `ui-chromium`, `ui-firefox`, and `ui-webkit`
 3. **Frontend: Visual Regression** — runs the three visual projects inside the `mcr.microsoft.com/playwright:v1.58.2-noble` container, so screenshots are rendered in exactly the same environment as the baselines; on failure, the expected/actual/diff images are uploaded as an artifact
-4. **Deploy Allure to Firebase** — combines results from all three test jobs and publishes them to Firebase Hosting
+4. **BDD: Gherkin Scenarios** — runs `bddgen` to generate the tests from the feature files, then runs `bdd-api` and `bdd-ui` on Chromium
+5. **Deploy Allure to Firebase** — combines results from all four test jobs and publishes them to Firebase Hosting
 
-The three test jobs run in parallel, so a visual change, a broken UI flow or an API regression each shows up as its own failing check.
+The four test jobs run in parallel, so a visual change, a broken UI flow, an API regression or a failing business scenario each shows up as its own failing check.
 
 A separate `docker-tests.yml` workflow is available for manual dispatch. It builds the Docker image, runs the functional suite (API + UI, excluding `@visual`) inside the container, and uploads the Allure results as a build artifact.
 
